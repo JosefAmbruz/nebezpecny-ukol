@@ -184,6 +184,8 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 	var points := score_assassin_kill if npc.is_assassin else score_civilian_penalty
 	if killer == _player:
 		_add_score(points)
+		if npc.visuals:
+			npc.visuals.show_score_popup(points)
 	elif killer is NpcBase and killer.character_data and killer.character_data.is_assassin:
 		killer.character_data.has_killed = true
 		killer.character_data.kill_score += points
@@ -211,14 +213,14 @@ func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role
 		_game_hud.set_quest_state(_player.has_balloon, _player.has_battery, _quest_completed)
 
 
-func _on_player_killed(attacker: Node3D) -> void:
+func _on_player_killed(attacker: Node3D, death_animation: Tween) -> void:
 	var killer_name := "neznámý assassin"
 	if attacker is NpcBase and not attacker.display_name.is_empty():
 		killer_name = attacker.display_name
 	if attacker is NpcBase and attacker.character_data and attacker.character_data.is_assassin:
 		attacker.character_data.has_killed = true
 		attacker.character_data.kill_score += score_assassin_kill
-	_end_match("Byl jsi zabit", "Dostal tě %s.\nKonečné skóre: %d" % [killer_name, _score])
+	_end_match("Byl jsi zabit", "Dostal tě %s.\nKonečné skóre: %d" % [killer_name, _score], death_animation)
 
 
 func _format_leaderboard() -> String:
@@ -248,7 +250,7 @@ func _add_score(delta_score: int) -> void:
 		_game_hud.set_score(_score)
 
 
-func _end_match(title: String, summary: String) -> void:
+func _end_match(title: String, summary: String, death_animation: Tween = null) -> void:
 	if _match_ended:
 		return
 	_match_ended = true
@@ -256,5 +258,7 @@ func _end_match(title: String, summary: String) -> void:
 	_assassin_list_ui.hide()
 	$InteractionIndicator.hide()
 	get_tree().paused = true
+	if death_animation:
+		await death_animation.finished
 	if _game_hud:
 		_game_hud.show_end_screen(title, summary, _format_leaderboard())

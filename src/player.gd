@@ -6,7 +6,7 @@ signal interaction_progress_changed(progress: float, kind: InteractableNpc.Inter
 signal interaction_cancelled
 signal interaction_completed(target: InteractableNpc, kind: InteractableNpc.InteractionKind)
 signal safe_state_changed(is_safe: bool, can_lean: bool)
-signal killed_by_assassin(attacker: Node3D)
+signal killed_by_assassin(attacker: Node3D, death_animation: Tween)
 
 const INTERACTABLE_NPC_MASK: int = 1 << 1 # Layer 2: InteractableNPC
 const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
@@ -273,7 +273,7 @@ func _handle_interaction(delta: float) -> void:
 		_caught_grace_elapsed = 0.0
 
 		if completed_kind == InteractableNpc.InteractionKind.ASSASSINATE and visuals:
-			visuals.play_state(&"attack")
+			visuals.play_attack(completed_target.get_character_root())
 
 		completed_target.complete_interaction(self)
 		interaction_completed.emit(completed_target, completed_kind)
@@ -317,9 +317,12 @@ func on_killed_by_assassin(attacker: Node3D) -> void:
 	if not is_alive or is_safe_from_attack():
 		return
 	is_alive = false
+	velocity = Vector3.ZERO
 	_cancel_interaction()
 	_stop_leaning()
-	killed_by_assassin.emit(attacker)
+	has_balloon = false
+	var death_animation := visuals.play_death(attacker) if visuals else null
+	killed_by_assassin.emit(attacker, death_animation)
 
 
 func _on_attack_hit() -> void:

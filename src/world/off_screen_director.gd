@@ -288,6 +288,7 @@ func _on_assassin_fled(npc: NpcBase, exit_side: int) -> void:
 
 
 func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
+	_active_civilians.erase(npc)
 	if npc.character_data:
 		npc.character_data.is_alive = false
 		for rec in _assassin_records:

@@ -20,7 +20,7 @@ func _run_test() -> void:
 	await physics_frame
 	assert(not world._player.is_safe_from_attack())
 
-	var killer := NpcBase.new()
+	var killer := OffScreenDirector.NPC_BASE_SCENE.instantiate() as NpcBase
 	killer.apply_character_data(world.assassins[0])
 	world.add_child(killer)
 	var victim := NpcBase.new()
@@ -29,21 +29,52 @@ func _run_test() -> void:
 	victim.died.connect(world._director._on_npc_died)
 	victim.on_interaction_completed(killer, InteractableNpc.InteractionKind.ASSASSINATE)
 
+	var civilian := world._director._active_civilians[0]
+	civilian.interactable.complete_interaction(world._player)
+	assert(civilian.state == NpcBase.State.DEAD and civilian.interactable.collision_layer == 0)
+	var penalty := civilian.visuals.get_node("ScorePopup") as Label3D
+	assert(penalty.text == "-50" and penalty.modulate.r > penalty.modulate.g)
+
+	var scored_victim := OffScreenDirector.NPC_BASE_SCENE.instantiate() as NpcBase
+	scored_victim.apply_character_data(world.assassins[2])
+	world.add_child(scored_victim)
+	scored_victim.died.connect(world._director._on_npc_died)
+	scored_victim.interactable.complete_interaction(world._player)
+	var reward := scored_victim.visuals.get_node("ScorePopup") as Label3D
+	assert(reward.text == "+100" and reward.modulate.g > reward.modulate.r)
+	assert(world._score == 50)
+	world._director.activate_level(1)
+	world._director.activate_level(0)
+
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.MADRINA_METTICULOSA)
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.PADRINO_MORETTI)
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.PADRINO_PACATO)
 	world._assassin_list_ui.toggle_list()
-	world._player.on_killed_by_assassin(killer)
+	killer.position = world._player.position + Vector3(-1.0, 0.0, 0.0)
+	world._player._looking_right = true
+	killer._stalk_target = world._player
+	killer._process_attack(killer.attack_duration)
+	assert(killer.visuals.get_node("Toothbrush").visible)
 	assert(paused and not world._player.can_process() and not world._director.can_process())
 	assert(not world._assassin_list_ui.visible)
+	var end_panel := world._game_hud.get_node("%EndGamePanel") as Control
+	assert(not end_panel.visible)
+	await end_panel.visibility_changed
+	await process_frame
+	assert(not killer.visuals.get_node("Toothbrush").visible)
+	assert(absf(world._player.visuals.rotation_degrees.z) >= 75.0)
+	assert(absf(civilian.visuals.rotation_degrees.z) >= 75.0)
 	assert(world._game_hud.get_node("%EndTitleLabel").text == "Byl jsi zabit")
-	assert(world._game_hud.get_node("%LeaderboardRows").text == "1. Ty — 300\n2. %s — 200" % killer.display_name)
+	assert(world._game_hud.get_node("%LeaderboardRows").text == "1. Ty — 350\n2. %s — 200" % killer.display_name)
 	var position := world._player.position
 	Input.action_press(&"move_right")
 	await physics_frame
 	await physics_frame
 	Input.action_release(&"move_right")
 	assert(world._player.position == position)
+	if is_instance_valid(penalty):
+		await penalty.tree_exited
+	assert(not civilian.visuals.has_node("ScorePopup"))
 
 	var previous_id := world.get_instance_id()
 	await _press_key(KEY_ENTER)
@@ -61,7 +92,7 @@ func _run_test() -> void:
 	world._update_match_clock(world.match_duration_seconds)
 	assert(paused and world._game_hud.get_node("%Leaderboard").is_visible_in_tree())
 	assert(world._game_hud.get_node("%LeaderboardRows").text == "1. %s — 100\n2. Ty — 0" % assassin.display_name)
-	print("Title, score ranking, input lock, and both restart controls passed.")
+	print("Title, kill score popups, persistent corpses, results, input lock, and restarts passed.")
 	quit()
 
 

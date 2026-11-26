@@ -350,7 +350,7 @@ func _process_attack(delta: float) -> void:
 
 	if _attack_elapsed >= attack_duration:
 		if visuals:
-			visuals.play_state(&"attack")
+			visuals.play_attack(_stalk_target)
 		if _stalk_target.has_method(&"on_killed_by_assassin"):
 			_stalk_target.call(&"on_killed_by_assassin", self)
 		elif _stalk_target.has_method(&"on_interaction_completed"):
@@ -430,12 +430,15 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 			_exit_lean()
 		state = State.DEAD
 		velocity = Vector3.ZERO
+		has_balloon = false
 		if interactable:
 			interactable.monitorable = false
+			interactable.collision_layer = 0
+		if visuals:
+			visuals.play_death(actor)
 		died.emit(self, actor)
 		if not is_assassin and actor and actor.is_in_group(&"player"):
 			_alert_nearby_assassins(actor)
-		queue_free()
 
 
 func _alert_nearby_assassins(player_node: Node3D, max_count: int = 3) -> void:
