@@ -365,6 +365,8 @@ func _process_attack(delta: float) -> void:
 
 	var dist_x := _stalk_target.global_position.x - global_position.x
 	if absf(dist_x) > attack_range * 1.15:
+		if visuals:
+			visuals.cancel_attack_windup()
 		state = State.STALK
 		return
 
@@ -376,10 +378,13 @@ func _process_attack(delta: float) -> void:
 	velocity.x = 0.0
 	_looking_right = dist_x >= 0.0
 	_attack_elapsed += delta
+	if visuals:
+		var charge := clampf(_attack_elapsed / maxf(0.05, attack_duration), 0.0, 1.0)
+		visuals.prepare_attack(_stalk_target, charge * 0.84)
 
 	if _attack_elapsed >= attack_duration:
 		var target := _stalk_target
-		_abort_attack()
+		_abort_attack(true)
 		if target is Player:
 			target.defense_requested.emit(self)
 		elif target is NpcBase:
@@ -388,7 +393,9 @@ func _process_attack(delta: float) -> void:
 			target.on_interaction_completed(self, InteractableNpc.InteractionKind.ASSASSINATE)
 
 
-func _abort_attack() -> void:
+func _abort_attack(keep_attack_pose: bool = false) -> void:
+	if visuals and not keep_attack_pose:
+		visuals.cancel_attack_windup()
 	velocity.x = 0.0
 	_attack_elapsed = 0.0
 	_stalk_target = null
@@ -421,6 +428,8 @@ func _process_evade(delta: float) -> void:
 
 
 func _enter_flee() -> void:
+	if visuals:
+		visuals.cancel_attack_windup()
 	if _is_leaning:
 		_exit_lean()
 	_stalk_target = null
@@ -601,7 +610,7 @@ func _update_visuals() -> void:
 		visuals.play_state(&"lean")
 	elif absf(velocity.x) > 0.1:
 		visuals.set_facing_right(velocity.x > 0.0)
-		visuals.play_state(&"run")
+		visuals.play_state(&"run", velocity.x)
 	else:
 		visuals.set_facing_right(_looking_right)
 		visuals.play_state(&"idle")

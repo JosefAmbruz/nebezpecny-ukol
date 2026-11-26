@@ -150,7 +150,7 @@ func _update_gaze_and_visuals() -> void:
 
 	if absf(velocity.x) > 0.1:
 		visuals.set_facing_right(velocity.x > 0.0)
-		visuals.play_state(&"run")
+		visuals.play_state(&"run", velocity.x)
 	else:
 		visuals.set_facing_right(_looking_right)
 		visuals.play_state(&"idle")
@@ -249,14 +249,15 @@ func _handle_interaction(delta: float) -> void:
 			interaction_started.emit(_active_target, _active_target.interaction_kind)
 			interaction_progress_changed.emit(0.0, _active_target.interaction_kind)
 
-	if not _active_target:
+	if not is_instance_valid(_active_target):
+		_cancel_interaction()
 		return
 
 	if not Input.is_action_pressed(&"interact"):
 		_cancel_interaction()
 		return
 
-	if not is_instance_valid(_active_target) or not _is_within_interact_range(_active_target) or not _active_target.can_be_interacted_by(self):
+	if not _is_within_interact_range(_active_target) or not _active_target.can_be_interacted_by(self):
 		_cancel_interaction()
 		return
 
@@ -273,6 +274,8 @@ func _handle_interaction(delta: float) -> void:
 	_interact_elapsed += delta
 	var duration := maxf(0.05, _active_target.interaction_duration)
 	var progress := clampf(_interact_elapsed / duration, 0.0, 1.0)
+	if visuals and _active_target.interaction_kind == InteractableNpc.InteractionKind.ASSASSINATE:
+		visuals.prepare_attack(_active_target.get_character_root(), progress)
 	interaction_progress_changed.emit(progress, _active_target.interaction_kind)
 
 	if _interact_elapsed >= duration:
@@ -310,6 +313,8 @@ func _set_interaction_hint(hint: InteractionHint) -> void:
 
 
 func _cancel_interaction() -> void:
+	if visuals:
+		visuals.cancel_attack_windup()
 	if not _active_target:
 		return
 	_active_target = null

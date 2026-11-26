@@ -26,6 +26,30 @@ func _run_test() -> void:
 	current_scene.get_node("Center/Content/Start").grab_focus()
 	await _press_key(KEY_ENTER)
 	var world := await _wait_for_match()
+	var shin := world._player.visuals.get_node("BodyRig/FrontShin") as MeshInstance3D
+	var rest_pose := shin.transform
+	Input.action_press(&"move_right")
+	await create_timer(0.16).timeout
+	Input.action_release(&"move_right")
+	assert(not shin.transform.is_equal_approx(rest_pose))
+	await create_timer(0.16).timeout
+	assert(shin.transform.is_equal_approx(rest_pose))
+	var visuals := world._player.visuals
+	var back_arm := visuals.get_node("BodyRig/BackForearm") as MeshInstance3D
+	var front_arm := visuals.get_node("BodyRig/FrontForearm") as MeshInstance3D
+	var foot := visuals.get_node("BodyRig/FrontFoot") as MeshInstance3D
+	visuals._pose_walk(0.0, 1.0, 1.0)
+	assert(foot.rotation.z > -PI * 0.5 and foot.position.x > 0.25)
+	assert(back_arm.position.y > front_arm.position.y)
+	var forward_arm_x := back_arm.position.x
+	visuals._pose_walk(0.0, 1.0, -1.0)
+	assert(foot.rotation.z < -PI * 0.5 and foot.position.x < -0.15)
+	assert(back_arm.position.x < forward_arm_x)
+	visuals._pose_walk(PI * 0.25, 1.0, 1.0)
+	assert(is_equal_approx(foot.position.y, 0.025))
+	visuals._pose_walk(PI * 1.5, 1.0, 1.0)
+	assert(foot.position.y > 0.12)
+	visuals._pose_walk(0.0, 0.0, 1.0)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Náměstí | Jdi doprava")
 	world._player.position.x = 0.0
 	await physics_frame
@@ -77,8 +101,17 @@ func _run_test() -> void:
 	world._player._looking_right = true
 	killer._stalk_target = world._player
 	var killer_depth := killer.visuals.global_position.z
+	killer._process_attack(killer.attack_duration * 0.2)
+	var grip := killer.visuals.get_node("Toothbrush") as Node3D
+	var handle := grip.get_node("Handle") as MeshInstance3D
+	assert(grip.visible and not handle.visible)
+	killer._process_attack(killer.attack_duration * 0.38)
+	assert(not handle.visible)
+	var gripping_forearm := killer.visuals.get_node("BodyRig/FrontForearm") as MeshInstance3D
+	var wrist := gripping_forearm.global_position + gripping_forearm.global_basis.y.normalized() * (gripping_forearm.scale.y - 0.045) * 0.5
+	assert(wrist.is_equal_approx(grip.global_position))
 	killer._process_attack(killer.attack_duration)
-	assert(killer.visuals.get_node("Toothbrush").visible)
+	assert(grip.visible and handle.visible and handle.scale.x < 0.5)
 	assert(world._player.is_alive and world._player.movement_locked and not paused)
 	assert(Engine.time_scale < 1.0 and world._game_hud.get_node("%DefensePanel").visible)
 	var match_time := world._elapsed_time
@@ -92,6 +125,8 @@ func _run_test() -> void:
 	assert(Engine.time_scale == 1.0 and world._defense_deadline_ms == 0)
 	assert(world._player.is_alive and world._assassin_list_ui.visible)
 	assert(world._game_hud.get_node("%DefenseLabel").text == "Útok odražen")
+	if killer.visuals._attack_tween.is_running():
+		await killer.visuals._attack_tween.finished
 	assert(not killer.visuals.get_node("Toothbrush").visible)
 	assert(is_equal_approx(killer.visuals.global_position.z, killer_depth))
 	assert(killer.character_data.kill_score == 100)
@@ -108,6 +143,8 @@ func _run_test() -> void:
 	assert(not world._assassin_list_ui.visible)
 	var end_panel := world._game_hud.get_node("%EndGamePanel") as Control
 	assert(not end_panel.visible)
+	await create_timer(0.09).timeout
+	assert(handle.visible and is_equal_approx(handle.scale.x, 1.0))
 	await end_panel.visibility_changed
 	await process_frame
 	assert(not killer.visuals.get_node("Toothbrush").visible)

@@ -153,6 +153,8 @@ func _exit_tree() -> void:
 
 func _start_defense(attacker: NpcBase) -> void:
 	if _match_ended or _defense_deadline_ms != 0:
+		if attacker != _defense_attacker and attacker.visuals:
+			attacker.visuals.cancel_attack_windup()
 		return
 	_defense_attacker = attacker
 	_defense_deadline_ms = Time.get_ticks_msec() + DEFENSE_WINDOW_MS

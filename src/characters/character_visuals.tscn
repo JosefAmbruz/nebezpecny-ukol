@@ -28,6 +28,28 @@ texture_repeat = false
 
 [sub_resource type="SphereMesh" id="SphereMesh_kakee"]
 
+[sub_resource type="StandardMaterial3D" id="Material_limb"]
+shading_mode = 0
+albedo_color = Color(0.012, 0.013, 0.015, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_rear_limb"]
+shading_mode = 0
+albedo_color = Color(0.052, 0.053, 0.057, 1)
+
+[sub_resource type="CapsuleMesh" id="Mesh_limb"]
+material = SubResource("Material_limb")
+radius = 0.033
+height = 1.0
+radial_segments = 8
+rings = 2
+
+[sub_resource type="CapsuleMesh" id="Mesh_foot"]
+material = SubResource("Material_limb")
+radius = 0.024
+height = 0.142
+radial_segments = 8
+rings = 2
+
 [sub_resource type="StandardMaterial3D" id="Material_brush_handle"]
 shading_mode = 0
 albedo_color = Color(0.09, 0.67, 0.62, 1)
@@ -44,13 +66,89 @@ albedo_color = Color(1, 0.97, 0.85, 1)
 material = SubResource("Material_brush_bristles")
 size = Vector3(0.18, 0.095, 0.08)
 
+[sub_resource type="SphereMesh" id="Mesh_grip_hand"]
+material = SubResource("Material_limb")
+radius = 0.047
+height = 0.094
+radial_segments = 10
+rings = 4
+
 [node name="CharacterVisuals" type="Node3D" unique_id=604539014]
 script = ExtResource("1_4phqr")
 appearance = SubResource("Resource_4phqr")
 
-[node name="BodySprite" type="Sprite3D" parent="." unique_id=852741146]
-transform = Transform3D(0.92990685, 0, 0, 0, 1, 0, 0, 0, 1, 0.02918458, 0.3885002, -0.09270471)
+[node name="BodyRig" type="Node3D" parent="."]
+position = Vector3(0, 0, -0.093)
+
+[node name="BodySprite" type="Sprite3D" parent="BodyRig" unique_id=852741146]
+position = Vector3(0, 0.554, 0)
+scale = Vector3(0.93, 1, 1)
 texture = ExtResource("1_g4g0v")
+region_enabled = true
+region_rect = Rect2(23, 0, 32, 61)
+
+[node name="BackUpperArm" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(-0.18225, 0.5824, -0.055)
+rotation = Vector3(0, 0, 2.65007)
+scale = Vector3(1, 0.26641, 1)
+mesh = SubResource("Mesh_limb")
+material_override = SubResource("Material_rear_limb")
+
+[node name="BackForearm" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(-0.25725, 0.4124, -0.055)
+rotation = Vector3(0, 0, 2.83714)
+scale = Vector3(1, 0.19678, 1)
+mesh = SubResource("Mesh_limb")
+material_override = SubResource("Material_rear_limb")
+
+[node name="FrontUpperArm" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(0.18225, 0.5824, 0.025)
+rotation = Vector3(0, 0, -2.65007)
+scale = Vector3(1, 0.26641, 1)
+mesh = SubResource("Mesh_limb")
+
+[node name="FrontForearm" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(0.25725, 0.4124, 0.025)
+rotation = Vector3(0, 0, -2.83714)
+scale = Vector3(1, 0.19678, 1)
+mesh = SubResource("Mesh_limb")
+
+[node name="BackThigh" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(-0.1, 0.25625, -0.055)
+rotation = Vector3(0, 0, 3.00682)
+scale = Vector3(1, 0.19385, 1)
+mesh = SubResource("Mesh_limb")
+material_override = SubResource("Material_rear_limb")
+
+[node name="BackShin" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(-0.12, 0.10875, -0.055)
+rotation = Vector3(0, 0, 3.00682)
+scale = Vector3(1, 0.19385, 1)
+mesh = SubResource("Mesh_limb")
+material_override = SubResource("Material_rear_limb")
+
+[node name="BackFoot" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(-0.13, 0.025, -0.055)
+rotation = Vector3(0, 0, -1.5707963)
+mesh = SubResource("Mesh_foot")
+material_override = SubResource("Material_rear_limb")
+
+[node name="FrontThigh" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(0.1, 0.25625, 0)
+rotation = Vector3(0, 0, -3.00682)
+scale = Vector3(1, 0.19385, 1)
+mesh = SubResource("Mesh_limb")
+
+[node name="FrontShin" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(0.12, 0.10875, 0)
+rotation = Vector3(0, 0, -3.00682)
+scale = Vector3(1, 0.19385, 1)
+mesh = SubResource("Mesh_limb")
+
+[node name="FrontFoot" type="MeshInstance3D" parent="BodyRig"]
+position = Vector3(0.13, 0.025, 0)
+rotation = Vector3(0, 0, -1.5707963)
+mesh = SubResource("Mesh_foot")
 
 [node name="HeadPivot" type="Marker3D" parent="." unique_id=54102647]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72800577, 0)
@@ -72,13 +170,20 @@ texture = ExtResource("5_4drbo")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1040987947]
 
-[node name="Toothbrush" type="MeshInstance3D" parent="."]
+[node name="Toothbrush" type="Node3D" parent="."]
 visible = false
-top_level = true
+
+[node name="Handle" type="MeshInstance3D" parent="Toothbrush"]
+position = Vector3(0.18, 0, 0)
 cast_shadow = 0
 mesh = SubResource("Mesh_brush_handle")
 
-[node name="Bristles" type="MeshInstance3D" parent="Toothbrush"]
+[node name="Bristles" type="MeshInstance3D" parent="Toothbrush/Handle"]
 position = Vector3(0.22, 0.07, 0)
 cast_shadow = 0
 mesh = SubResource("Mesh_brush_bristles")
+
+[node name="Hand" type="MeshInstance3D" parent="Toothbrush"]
+position = Vector3(0, 0, 0.025)
+cast_shadow = 0
+mesh = SubResource("Mesh_grip_hand")

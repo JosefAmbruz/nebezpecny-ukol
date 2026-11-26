@@ -126,7 +126,7 @@ func _physics_process(delta: float) -> void:
 		visuals.look_at_world_point(global_position + Vector3(look_x, 1.25, 2.0))
 		if absf(velocity.x) > 0.1:
 			visuals.set_facing_right(velocity.x > 0.0)
-			visuals.play_state(&"run")
+			visuals.play_state(&"run", velocity.x)
 		else:
 			visuals.play_state(&"idle")
 
