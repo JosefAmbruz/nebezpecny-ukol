@@ -71,7 +71,7 @@ alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.96, 0.94, 0.86, 1)
 theme_override_font_sizes/font_size = 54
-text = "ASSASSINI V DAVU"
+text = "Nebezpečný úkol"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Center/Content"]
