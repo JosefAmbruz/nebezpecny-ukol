@@ -47,6 +47,7 @@ var _caught_grace_elapsed: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group(&"player")
 	collision_layer = 0
 	collision_mask = 1 # Layer 1: WorldGeometry
 
@@ -94,17 +95,19 @@ func _handle_movement(delta: float) -> void:
 
 
 func _update_gaze_and_visuals() -> void:
-	_cursor_world_point = get_cursor_world_point()
-	_looking_right = _cursor_world_point.x >= global_position.x
-
 	if not visuals:
 		return
 
+	if _is_leaning:
+		visuals.look_forward()
+		visuals.play_state(&"lean")
+		return
+
+	_cursor_world_point = get_cursor_world_point()
+	_looking_right = _cursor_world_point.x >= global_position.x
 	visuals.look_at_world_point(_cursor_world_point)
 
-	if _is_leaning:
-		visuals.play_state(&"lean")
-	elif absf(velocity.x) > 0.1:
+	if absf(velocity.x) > 0.1:
 		visuals.set_facing_right(velocity.x > 0.0)
 		visuals.play_state(&"run")
 	else:

@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="AppearancePool" format=3]
+
+[ext_resource type="Script" path="res://src/characters/appearance_pool.gd" id="1_pool"]
+[ext_resource type="Texture2D" uid="uid://dxplvvx7wm2pb" path="res://assets/faces/face1.png" id="2_f1"]
+[ext_resource type="Texture2D" uid="uid://ccthk050mevmk" path="res://assets/faces/face2.png" id="3_f2"]
+
+[resource]
+script = ExtResource("1_pool")
+face_textures = Array[Texture2D]([ExtResource("2_f1"), ExtResource("3_f2")])

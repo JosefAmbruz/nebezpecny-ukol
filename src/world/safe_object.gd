@@ -12,6 +12,7 @@ var _occupants: Array[Node3D] = []
 
 
 func _ready() -> void:
+	add_to_group(&"safe_objects")
 	collision_layer = 1 << 2 # Layer 3: SafeObjects
 	collision_mask = 0
 	monitoring = false

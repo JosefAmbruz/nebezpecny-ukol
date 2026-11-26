@@ -56,6 +56,11 @@ func look_at_world_point(world_point: Vector3) -> void:
 	_target_yaw = clamp(raw_yaw, -max_head_yaw, max_head_yaw)
 	_target_pitch = clamp(raw_pitch, -max_head_pitch, max_head_pitch)
 
+## Natočí hlavu přímo směrem do kamery (např. při opření)
+func look_forward() -> void:
+	_target_yaw = 0.0
+	_target_pitch = 0.0
+
 ## Nastaví směr těla (pro 2D sidescroller vlevo/vpravo)
 func set_facing_right(right: bool) -> void:
 	if _facing_right == right:
