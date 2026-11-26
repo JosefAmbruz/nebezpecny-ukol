@@ -14,6 +14,11 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 @export var role: Role = Role.PADRINO_PACATO
 @export var display_name: String = "Padrino Pacato"
 @export var visuals: CharacterVisuals
+@export var appearance: CharacterAppearance:
+	set(value):
+		appearance = value
+		if visuals and value:
+			visuals.appearance = value
 @export var interactable: InteractableNpc
 @export var immunity_zone: SafeObject
 @export var balloon_bunch: Node3D
@@ -36,6 +41,9 @@ func _ready() -> void:
 
 	if interactable:
 		interactable.interaction_kind = InteractableNpc.InteractionKind.QUEST
+
+	if visuals and appearance:
+		visuals.appearance = appearance
 
 	_configure_by_role()
 	_pick_new_wander_target()

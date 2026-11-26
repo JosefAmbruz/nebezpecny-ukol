@@ -2,12 +2,16 @@
 
 [ext_resource type="PackedScene" uid="uid://cslhaif871y5v" path="res://src/player.tscn" id="1_tp5op"]
 [ext_resource type="PackedScene" path="res://src/ui/interaction_indicator.tscn" id="2_uiind"]
+[ext_resource type="Texture2D" uid="uid://bnt152wwk6mrb" path="res://assets/faces/face4.png" id="3_tnjnu"]
 [ext_resource type="PackedScene" uid="uid://ctuvvi1xre6er" path="res://src/world/safe_object.tscn" id="4_safe"]
-[ext_resource type="Script" path="res://src/world.gd" id="8_world"]
+[ext_resource type="Script" uid="uid://bmonou5unw40" path="res://src/characters/character_appearance.gd" id="5_app"]
+[ext_resource type="Texture2D" uid="uid://bdq1gp6gj44s7" path="res://assets/faces/face5.png" id="6_eemcn"]
+[ext_resource type="Texture2D" uid="uid://c63kanxt4ith8" path="res://assets/faces/face9.png" id="7_njovb"]
+[ext_resource type="Script" uid="uid://nsybtej0atxt" path="res://src/world.gd" id="8_world"]
 [ext_resource type="PackedScene" path="res://src/ui/assassin_list_ui.tscn" id="9_listui"]
 [ext_resource type="PackedScene" path="res://src/ui/game_hud.tscn" id="10_hud"]
-[ext_resource type="Script" path="res://src/world/level_zone.gd" id="11_zone"]
-[ext_resource type="Script" path="res://src/world/off_screen_director.gd" id="12_dir"]
+[ext_resource type="Script" uid="uid://cc1emyuveghto" path="res://src/world/level_zone.gd" id="11_zone"]
+[ext_resource type="Script" uid="uid://bvrl8vu1qkm70" path="res://src/world/off_screen_director.gd" id="12_dir"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_tp5op"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -22,10 +26,20 @@ sky = SubResource("Sky_xlegt")
 glow_enabled = true
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
-size = Vector3(96.0, 2.0, 18.0)
+size = Vector3(96, 2, 18)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
-size = Vector3(96.0, 2.0, 18.0)
+size = Vector3(96, 2, 18)
+
+[sub_resource type="Resource" id="Resource_7vlx1"]
+script = ExtResource("5_app")
+face_texture = ExtResource("3_tnjnu")
+metadata/_custom_type_script = "uid://bmonou5unw40"
+
+[sub_resource type="Resource" id="Resource_lsgvq"]
+script = ExtResource("5_app")
+face_texture = ExtResource("6_eemcn")
+metadata/_custom_type_script = "uid://bmonou5unw40"
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_marker"]
 albedo_color = Color(0.85, 0.72, 0.25, 1)
@@ -33,6 +47,11 @@ albedo_color = Color(0.85, 0.72, 0.25, 1)
 [sub_resource type="BoxMesh" id="BoxMesh_marker"]
 material = SubResource("StandardMaterial3D_marker")
 size = Vector3(0.35, 3.6, 0.35)
+
+[sub_resource type="Resource" id="Resource_i1wtg"]
+script = ExtResource("5_app")
+face_texture = ExtResource("7_njovb")
+metadata/_custom_type_script = "uid://bmonou5unw40"
 
 [node name="World" type="Node3D" unique_id=1484689679]
 script = ExtResource("8_world")
@@ -53,59 +72,88 @@ mesh = SubResource("BoxMesh_ground")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=856471424]
 shape = SubResource("BoxShape3D_ground")
 
-[node name="Levels" type="Node3D" parent="."]
+[node name="Levels" type="Node3D" parent="." unique_id=2114400004]
 
-[node name="Level1" type="Node3D" parent="Levels"]
+[node name="Level1" type="Node3D" parent="Levels" unique_id=688422837 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
-level_id = 0
 level_name = "Level 1 – Start (Padrino Pacato)"
-min_x = -15.0
-max_x = 15.0
-floor_y = 0.6
-civilian_count = 4
-quest_npc_start_x = -11.0
+left_bound = NodePath("LeftBound")
+right_bound = NodePath("RightBound")
+quest_npc_spawn = NodePath("QuestNpcSpawn")
+quest_npc_appearance = SubResource("Resource_7vlx1")
 
-[node name="SafeObjectL1" parent="Levels/Level1" instance=ExtResource("4_safe")]
+[node name="LeftBound" type="Marker3D" parent="Levels/Level1" unique_id=1937204990]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.6, 0)
+
+[node name="RightBound" type="Marker3D" parent="Levels/Level1" unique_id=1261633226]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.6, 0)
+
+[node name="QuestNpcSpawn" type="Marker3D" parent="Levels/Level1" unique_id=2083790827]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0.6, 0)
+
+[node name="SafeObjectL1" parent="Levels/Level1" unique_id=1366988348 instance=ExtResource("4_safe")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.5, -5.2)
 
-[node name="Level2" type="Node3D" parent="Levels"]
+[node name="Level2" type="Node3D" parent="Levels" unique_id=714084602 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
 level_id = 1
 level_name = "Level 2 – Náměstí (Madrina Metticulosa)"
-min_x = 15.0
-max_x = 45.0
-floor_y = 0.6
 civilian_count = 5
-quest_npc_start_x = 30.0
+left_bound = NodePath("LeftBound")
+right_bound = NodePath("RightBound")
+quest_npc_spawn = NodePath("QuestNpcSpawn")
+quest_npc_role = 1
+quest_npc_appearance = SubResource("Resource_lsgvq")
+preview_color = Color(0.3, 0.65, 0.95, 1)
 
-[node name="SafeObjectL2" parent="Levels/Level2" instance=ExtResource("4_safe")]
+[node name="LeftBound" type="Marker3D" parent="Levels/Level2" unique_id=1431897030]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.6, 0)
+
+[node name="RightBound" type="Marker3D" parent="Levels/Level2" unique_id=1087710058]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0.6, 0)
+
+[node name="QuestNpcSpawn" type="Marker3D" parent="Levels/Level2" unique_id=1745960285]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0.6, 0)
+
+[node name="SafeObjectL2" parent="Levels/Level2" unique_id=977882420 instance=ExtResource("4_safe")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.5, -5.2)
 
-[node name="BoundaryL1L2" type="MeshInstance3D" parent="Levels/Level2"]
+[node name="BoundaryL1L2" type="MeshInstance3D" parent="Levels/Level2" unique_id=1362403151]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2.3, -5.8)
 mesh = SubResource("BoxMesh_marker")
 
-[node name="Level3" type="Node3D" parent="Levels"]
+[node name="Level3" type="Node3D" parent="Levels" unique_id=1021442553 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
 level_id = 2
 level_name = "Level 3 – Park (Padrino Moretti)"
-min_x = 45.0
-max_x = 75.0
-floor_y = 0.6
 civilian_count = 5
-quest_npc_start_x = 60.0
+left_bound = NodePath("LeftBound")
+right_bound = NodePath("RightBound")
+quest_npc_spawn = NodePath("QuestNpcSpawn")
+quest_npc_role = 2
+quest_npc_appearance = SubResource("Resource_i1wtg")
+preview_color = Color(0.95, 0.55, 0.25, 1)
 
-[node name="SafeObjectL3" parent="Levels/Level3" instance=ExtResource("4_safe")]
+[node name="LeftBound" type="Marker3D" parent="Levels/Level3" unique_id=1714491107]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0.6, 0)
+
+[node name="RightBound" type="Marker3D" parent="Levels/Level3" unique_id=351418331]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0.6, 0)
+
+[node name="QuestNpcSpawn" type="Marker3D" parent="Levels/Level3" unique_id=1578280078]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0.6, 0)
+
+[node name="SafeObjectL3" parent="Levels/Level3" unique_id=1385146574 instance=ExtResource("4_safe")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58, 0.5, -5.2)
 
-[node name="BoundaryL2L3" type="MeshInstance3D" parent="Levels/Level3"]
+[node name="BoundaryL2L3" type="MeshInstance3D" parent="Levels/Level3" unique_id=1392605300]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 2.3, -5.8)
 mesh = SubResource("BoxMesh_marker")
 
-[node name="OffScreenDirector" type="Node" parent="."]
+[node name="OffScreenDirector" type="Node" parent="." unique_id=495111566]
 script = ExtResource("12_dir")
 
-[node name="ActiveNpcs" type="Node3D" parent="."]
+[node name="ActiveNpcs" type="Node3D" parent="." unique_id=2008399917]
 
 [node name="Player" parent="." unique_id=1465987505 instance=ExtResource("1_tp5op")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0.6, 2.4)
@@ -113,6 +161,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.5, 0.6, 2.4)
 [node name="InteractionIndicator" parent="." unique_id=168816524 node_paths=PackedStringArray("player") instance=ExtResource("2_uiind")]
 player = NodePath("../Player")
 
-[node name="AssassinListUI" parent="." instance=ExtResource("9_listui")]
+[node name="AssassinListUI" parent="." unique_id=1819227641 instance=ExtResource("9_listui")]
 
-[node name="GameHud" parent="." instance=ExtResource("10_hud")]
+[node name="GameHud" parent="." unique_id=1956841486 instance=ExtResource("10_hud")]

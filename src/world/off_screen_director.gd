@@ -137,13 +137,9 @@ func _despawn_active_level() -> void:
 
 func _spawn_quest_npc_for_zone(zone: LevelZone) -> void:
 	var qnpc := QUEST_NPC_SCENE.instantiate() as QuestNpc
-	match zone.level_id:
-		0:
-			qnpc.role = QuestNpc.Role.PADRINO_PACATO
-		1:
-			qnpc.role = QuestNpc.Role.MADRINA_METTICULOSA
-		_:
-			qnpc.role = QuestNpc.Role.PADRINO_MORETTI
+	qnpc.role = zone.quest_npc_role
+	if zone.quest_npc_appearance:
+		qnpc.appearance = zone.quest_npc_appearance
 
 	qnpc.level_min_x = zone.min_x + 1.0
 	qnpc.level_max_x = zone.max_x - 1.0

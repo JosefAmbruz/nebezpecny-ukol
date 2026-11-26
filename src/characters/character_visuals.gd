@@ -17,6 +17,8 @@ signal hit_frame
 
 @onready var head_pivot: Node3D = $HeadPivot
 @onready var head_mesh: MeshInstance3D = $HeadPivot/HeadMesh
+@onready var ear_r: Sprite3D = $HeadPivot/EarR
+@onready var ear_l: Sprite3D = $HeadPivot/EarR2
 @onready var body_sprite: Sprite3D = $BodySprite
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
 
@@ -44,6 +46,11 @@ func _apply_appearance() -> void:
 	if mat:
 		mat.albedo_color = appearance.skin_color
 		mat.albedo_texture = appearance.face_texture
+
+	if ear_r:
+		ear_r.modulate = appearance.skin_color
+	if ear_l:
+		ear_l.modulate = appearance.skin_color
 
 ## Natočí hlavu směrem ke světové pozici (např. kurzor, hráč, podezřelý zvuk)
 func look_at_world_point(world_point: Vector3) -> void:

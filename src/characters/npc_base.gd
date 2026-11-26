@@ -448,8 +448,8 @@ func _alert_nearby_assassins(player_node: Node3D, max_count: int = 3) -> void:
 		alerted += 1
 
 
-func _is_valid_attack_target(target: Node3D) -> bool:
-	if not is_instance_valid(target):
+func _is_valid_attack_target(target: Variant) -> bool:
+	if not is_instance_valid(target) or not (target is Node3D):
 		return false
 	if target is Player:
 		return target.is_alive
@@ -458,13 +458,17 @@ func _is_valid_attack_target(target: Node3D) -> bool:
 	return false
 
 
-func _target_is_safe(target: Node3D) -> bool:
+func _target_is_safe(target: Variant) -> bool:
+	if not is_instance_valid(target):
+		return false
 	if target.has_method(&"is_safe_from_attack"):
 		return target.call(&"is_safe_from_attack")
 	return false
 
 
-func _target_is_looking_at_me(target: Node3D) -> bool:
+func _target_is_looking_at_me(target: Variant) -> bool:
+	if not is_instance_valid(target):
+		return false
 	if target.has_method(&"is_looking_at"):
 		return target.call(&"is_looking_at", self)
 	return false

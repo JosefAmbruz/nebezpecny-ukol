@@ -29,6 +29,7 @@ var _levels: Array[LevelZone] = []
 var _active_zone: LevelZone = null
 var _world_min_x: float = -15.0
 var _world_max_x: float = 75.0
+var _camera_base_offset: Vector3 = Vector3.ZERO
 
 var _elapsed_time: float = 0.0
 var _score: int = 0
@@ -45,6 +46,11 @@ func _ready() -> void:
 	if not _levels.is_empty():
 		_world_min_x = _levels[0].min_x + 0.6
 		_world_max_x = _levels[-1].max_x - 0.6
+
+	if _player_camera:
+		_camera_base_offset = _player_camera.position
+		_player_camera.top_level = true
+		_player_camera.global_position = _player.global_position + _camera_base_offset
 
 	_director.npc_died.connect(_on_npc_died)
 	_director.quest_npc_interacted.connect(_on_quest_npc_interacted)
@@ -82,7 +88,7 @@ func _start_match() -> void:
 		_director.activate_level(start_zone.level_id)
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	if _match_ended:
 		return
 
@@ -95,6 +101,11 @@ func _process(delta: float) -> void:
 		_director.activate_level(zone.level_id)
 
 	_update_camera_clamp(delta)
+
+
+func _process(delta: float) -> void:
+	if _match_ended:
+		return
 	_update_match_clock(delta)
 
 
@@ -109,12 +120,13 @@ func _update_camera_clamp(delta: float) -> void:
 		if min_cam_x > max_cam_x
 		else clampf(_player.global_position.x, min_cam_x, max_cam_x)
 	)
-	var desired_local_x := target_world_x - _player.global_position.x
-	_player_camera.position.x = lerpf(
-		_player_camera.position.x,
-		desired_local_x,
-		clampf(camera_smooth_speed * delta, 0.0, 1.0)
-	)
+
+	var weight := 1.0 - exp(-camera_smooth_speed * delta)
+	var pos := _player_camera.global_position
+	pos.x = lerpf(pos.x, target_world_x, weight)
+	pos.y = _player.global_position.y + _camera_base_offset.y
+	pos.z = _player.global_position.z + _camera_base_offset.z
+	_player_camera.global_position = pos
 
 
 func _update_match_clock(delta: float) -> void:
