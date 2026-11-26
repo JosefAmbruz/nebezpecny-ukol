@@ -17,6 +17,7 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 
 @export var visuals: CharacterVisuals
 @export var interactable: InteractableNpc
+@export var safe_detector: Area3D
 @export var appearance: CharacterAppearance:
 	set(value):
 		appearance = value
@@ -46,12 +47,18 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 @export var vertical_look_interval_range: Vector2 = Vector2(1.5, 4.0)
 @export var vertical_look_range: float = 1.1
 
+@export_group("Audio (Dabing / Výkřiky)")
+@export var voice_flee: AudioStream
+@export var voice_death: AudioStream
+@export var voice_chatter: AudioStream
+
 @export_group("Assassin AI")
 @export var detect_range: float = 6.5
 @export var attack_range: float = 1.9
 @export var attack_duration: float = 1.8
 @export var stalk_trigger_chance_per_sec: float = 0.14
 @export var balloon_detect_multiplier: float = 2.5
+@export var balloon_detect_range_multiplier: float = 1.8
 @export var post_abort_cooldown: float = 4.0
 
 var state: State = State.WANDER
@@ -62,6 +69,7 @@ var has_balloon: bool = false:
 var character_data: CharacterData = null
 
 var _balloon_instance: Node3D = null
+@onready var _voice_player: AudioStreamPlayer3D = get_node_or_null("VoicePlayer") as AudioStreamPlayer3D
 
 var _looking_right: bool = true
 var _wander_target_x: float = 0.0
@@ -74,6 +82,7 @@ var _vertical_look_timer: float = 0.0
 var _vertical_look_offset: float = 0.0
 
 var _target_safe_object: SafeObject = null
+var _overlapping_immunity_zones: Array[SafeObject] = []
 var _is_leaning: bool = false
 var _lean_timer: float = 0.0
 
@@ -95,6 +104,10 @@ func _ready() -> void:
 	if visuals and appearance:
 		visuals.appearance = appearance
 
+	if safe_detector:
+		safe_detector.area_entered.connect(_on_safe_area_entered)
+		safe_detector.area_exited.connect(_on_safe_area_exited)
+
 	_looking_right = randf() > 0.5
 	_pick_new_wander_target()
 	_reset_glance_timer()
@@ -106,7 +119,9 @@ func _ready() -> void:
 func _sync_balloon_visual() -> void:
 	if not is_node_ready():
 		return
-	var anchor := get_node_or_null("BalloonAnchor") as Node3D
+	var anchor: Node3D = visuals.get_balloon_anchor() if visuals else null
+	if not anchor:
+		anchor = get_node_or_null("BalloonAnchor") as Node3D
 	if not anchor:
 		return
 	if has_balloon and not is_instance_valid(_balloon_instance):
@@ -271,7 +286,7 @@ func alert_to_stalk(target: Node3D) -> void:
 
 
 func _try_acquire_stalk_target(delta: float) -> void:
-	if _attack_cooldown > 0.0:
+	if _attack_cooldown > 0.0 or _is_in_passive_immunity_zone():
 		return
 
 	var potential_targets: Array[Node3D] = []
@@ -283,11 +298,13 @@ func _try_acquire_stalk_target(delta: float) -> void:
 			potential_targets.append(node)
 
 	for target in potential_targets:
+		var has_target_balloon: bool = target.get(&"has_balloon") == true
+		var effective_range := detect_range * (balloon_detect_range_multiplier if has_target_balloon else 1.0)
 		var dist := absf(target.global_position.x - global_position.x)
-		if dist > detect_range:
+		if dist > effective_range:
 			continue
 		var chance := stalk_trigger_chance_per_sec * delta
-		if target.get(&"has_balloon") == true:
+		if has_target_balloon:
 			chance *= balloon_detect_multiplier
 		if randf() < chance:
 			_stalk_target = target
@@ -306,8 +323,8 @@ func _process_stalk(delta: float) -> void:
 	var dist_x := _stalk_target.global_position.x - global_position.x
 	var abs_dist := absf(dist_x)
 
-	# Pokud je blízko, cíl není v bezpečí a nedívá se na nás -> zahájíme nenápadný útok kartáčkem
-	if abs_dist <= attack_range and not _target_is_safe(_stalk_target) and not _target_is_looking_at_me(_stalk_target):
+	# Pokud je blízko, nikdo z nich není v bezpečí/imunitě a cíl se na nás nedívá -> zahájíme nenápadný útok kartáčkem
+	if abs_dist <= attack_range and not _is_in_passive_immunity_zone() and not _target_is_safe(_stalk_target) and not _target_is_looking_at_me(_stalk_target):
 		_looking_right = dist_x >= 0.0
 		_attack_elapsed = 0.0
 		state = State.ATTACK
@@ -339,8 +356,8 @@ func _process_attack(delta: float) -> void:
 		state = State.STALK
 		return
 
-	# Hráč (nebo jiný assassin) se na nás podíval nebo se opřel -> přerušíme útok a děláme nenápadného
-	if _target_is_safe(_stalk_target) or _target_is_looking_at_me(_stalk_target):
+	# Hráč (nebo jiný assassin) se na nás podíval, opřel se, nebo je někdo v zóně imunity -> přerušíme útok
+	if _is_in_passive_immunity_zone() or _target_is_safe(_stalk_target) or _target_is_looking_at_me(_stalk_target):
 		_abort_attack()
 		return
 
@@ -377,6 +394,9 @@ func _enter_flee() -> void:
 	_attack_elapsed = 0.0
 	state = State.FLEE
 
+	if voice_flee and _voice_player:
+		AudioManager.try_play_crowd_voice_3d(_voice_player, voice_flee, 1.5)
+
 	# Vybere nejbližší platný okraj levelu, ze kterého vede cesta do sousedního levelu
 	if can_flee_left and can_flee_right:
 		var dist_left := absf(global_position.x - level_min_x)
@@ -403,8 +423,27 @@ func _process_flee(_delta: float) -> void:
 
 #region InteractableNpc Callbacks & Helpers
 
+func _is_in_passive_immunity_zone() -> bool:
+	for obj in _overlapping_immunity_zones:
+		if is_instance_valid(obj) and obj.is_passive_immunity:
+			return true
+	return false
+
+
+func _on_safe_area_entered(area: Area3D) -> void:
+	var safe_obj := area as SafeObject
+	if safe_obj and safe_obj.is_passive_immunity and safe_obj not in _overlapping_immunity_zones:
+		_overlapping_immunity_zones.append(safe_obj)
+
+
+func _on_safe_area_exited(area: Area3D) -> void:
+	var safe_obj := area as SafeObject
+	if safe_obj:
+		_overlapping_immunity_zones.erase(safe_obj)
+
+
 func is_safe_from_attack() -> bool:
-	return _is_leaning or state == State.DEAD
+	return _is_leaning or _is_in_passive_immunity_zone() or state == State.DEAD
 
 
 func is_looking_at(target: Node3D) -> bool:
@@ -432,6 +471,8 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 		velocity = Vector3.ZERO
 		if interactable:
 			interactable.monitorable = false
+		if voice_death:
+			AudioManager.play_sfx(voice_death, 0.0, 0.06)
 		died.emit(self, actor)
 		if not is_assassin and actor and actor.is_in_group(&"player"):
 			_alert_nearby_assassins(actor)

@@ -21,6 +21,14 @@ extends Node3D
 @export var assassinate_focus_y_offset: float = 1.2
 @export var assassinate_zoom_return_duration: float = 0.32
 
+@export_group("Audio (Hudba & SFX)")
+@export var background_music: AudioStream
+@export var sfx_assassin_tag: AudioStream
+@export var sfx_brush_break: AudioStream
+@export var sfx_quest_progress: AudioStream
+@export var sfx_list_toggle: AudioStream
+@export var sfx_player_killed: AudioStream
+
 @onready var _player: Player = $Player
 @onready var _player_camera: Camera3D = $Player/Camera3D
 @onready var _director: OffScreenDirector = $OffScreenDirector
@@ -115,6 +123,9 @@ func _start_match() -> void:
 	if start_zone:
 		_director.activate_level(start_zone.level_id)
 
+	if background_music and (not _active_zone or not _active_zone.music_override):
+		AudioManager.play_music(background_music)
+
 
 func _physics_process(delta: float) -> void:
 	if _match_ended:
@@ -140,6 +151,7 @@ func _process(delta: float) -> void:
 func _on_assassin_list_visibility_changed(is_open: bool) -> void:
 	_is_list_open = is_open
 	_player.set_movement_locked(is_open)
+	AudioManager.play_sfx(sfx_list_toggle)
 
 	if not _player_camera:
 		return
@@ -244,6 +256,12 @@ func _on_level_activated(zone: LevelZone) -> void:
 	_active_zone = zone
 	if _game_hud:
 		_game_hud.set_level_name(zone.level_name)
+	AudioManager.play_ambient(zone.ambient_stream)
+	AudioManager.set_ambient_oneshots(zone.ambient_oneshots)
+	if zone.music_override:
+		AudioManager.play_music(zone.music_override)
+	elif background_music:
+		AudioManager.play_music(background_music)
 
 
 func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
@@ -252,8 +270,10 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 
 	if killer == _player:
 		if npc.is_assassin:
+			AudioManager.play_sfx(sfx_assassin_tag)
 			_add_score(score_assassin_kill)
 		else:
+			AudioManager.play_sfx(sfx_brush_break)
 			_add_score(score_civilian_penalty)
 			_broken_toothbrushes += 1
 			if _game_hud:
@@ -273,14 +293,17 @@ func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role
 		QuestNpc.Role.MADRINA_METTICULOSA:
 			if not _player.has_balloon:
 				_player.has_balloon = true
+				AudioManager.play_sfx(sfx_quest_progress)
 		QuestNpc.Role.PADRINO_MORETTI:
 			if _player.has_balloon and not _player.has_battery:
 				_player.has_battery = true
+				AudioManager.play_sfx(sfx_quest_progress)
 		QuestNpc.Role.PADRINO_PACATO:
 			if _player.has_balloon and _player.has_battery and not _quest_completed:
 				_quest_completed = true
 				_player.has_balloon = false
 				_player.has_battery = false
+				AudioManager.play_sfx(sfx_quest_progress)
 				_add_score(score_quest_bonus)
 
 	if _game_hud:
@@ -288,6 +311,7 @@ func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role
 
 
 func _on_player_killed(attacker: Node3D) -> void:
+	AudioManager.play_sfx(sfx_player_killed)
 	if _player.visuals:
 		_player.visuals.visible = false
 	_director.spawn_death_mark(_player.global_position, "Ty (Hráč)", true)

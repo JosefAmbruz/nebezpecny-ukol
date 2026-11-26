@@ -71,7 +71,9 @@ func _ready() -> void:
 func _sync_balloon_visual() -> void:
 	if not is_node_ready():
 		return
-	var anchor := get_node_or_null("BalloonAnchor") as Node3D
+	var anchor: Node3D = visuals.get_balloon_anchor() if visuals else null
+	if not anchor:
+		anchor = get_node_or_null("BalloonAnchor") as Node3D
 	if not anchor:
 		return
 	if has_balloon and not is_instance_valid(_balloon_instance):
@@ -232,7 +234,12 @@ func _handle_interaction(delta: float) -> void:
 
 	if Input.is_action_just_pressed(&"interact"):
 		var hovered := _pick_npc_under_cursor()
-		if hovered and _is_within_interact_range(hovered) and hovered.can_be_interacted_by(self):
+		var blocked_by_immunity := (
+			hovered != null
+			and hovered.interaction_kind == InteractableNpc.InteractionKind.ASSASSINATE
+			and _is_in_passive_immunity_zone()
+		)
+		if hovered and not blocked_by_immunity and _is_within_interact_range(hovered) and hovered.can_be_interacted_by(self):
 			_active_target = hovered
 			_interact_elapsed = 0.0
 			_caught_grace_elapsed = 0.0
@@ -246,7 +253,12 @@ func _handle_interaction(delta: float) -> void:
 		_cancel_interaction()
 		return
 
-	if not is_instance_valid(_active_target) or not _is_within_interact_range(_active_target) or not _active_target.can_be_interacted_by(self):
+	if (
+		not is_instance_valid(_active_target)
+		or not _is_within_interact_range(_active_target)
+		or not _active_target.can_be_interacted_by(self)
+		or (_active_target.interaction_kind == InteractableNpc.InteractionKind.ASSASSINATE and _is_in_passive_immunity_zone())
+	):
 		_cancel_interaction()
 		return
 

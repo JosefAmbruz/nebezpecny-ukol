@@ -1,9 +1,9 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://c7dp8roytj7uq"]
 
-[ext_resource type="Script" path="res://src/characters/quest_npc.gd" id="1_qnpc"]
+[ext_resource type="Script" uid="uid://dofncscli8ge7" path="res://src/characters/quest_npc.gd" id="1_qnpc"]
 [ext_resource type="PackedScene" uid="uid://c7qxmfn0njj55" path="res://src/characters/character_visuals.tscn" id="2_vis"]
-[ext_resource type="Script" path="res://src/characters/interactable_npc.gd" id="3_int"]
-[ext_resource type="Script" path="res://src/world/safe_object.gd" id="4_safe"]
+[ext_resource type="Script" uid="uid://irvssc7anbd1" path="res://src/characters/interactable_npc.gd" id="3_int"]
+[ext_resource type="Script" uid="uid://dgd2hwf7ky330" path="res://src/world/safe_object.gd" id="4_safe"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.28
@@ -13,9 +13,9 @@ height = 1.94
 size = Vector3(1.1, 2.1, 0.9)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_imm"]
-size = Vector3(4.5, 2.5, 16.0)
+size = Vector3(4.5, 2.5, 16)
 
-[node name="QuestNpc" type="CharacterBody3D" node_paths=PackedStringArray("visuals", "interactable", "immunity_zone", "balloon_bunch")]
+[node name="QuestNpc" type="CharacterBody3D" unique_id=525824191 node_paths=PackedStringArray("visuals", "interactable", "immunity_zone", "balloon_bunch")]
 collision_layer = 0
 script = ExtResource("1_qnpc")
 visuals = NodePath("CharacterVisuals")
@@ -23,13 +23,13 @@ interactable = NodePath("InteractableNpc")
 immunity_zone = NodePath("ImmunityZone")
 balloon_bunch = NodePath("BalloonBunch")
 
-[node name="CharacterVisuals" parent="." instance=ExtResource("2_vis")]
+[node name="CharacterVisuals" parent="." unique_id=171576089 instance=ExtResource("2_vis")]
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1181924255]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.97, 0)
 shape = SubResource("CapsuleShape3D_body")
 
-[node name="InteractableNpc" type="Area3D" parent="." node_paths=PackedStringArray("character_root")]
+[node name="InteractableNpc" type="Area3D" parent="." unique_id=1956115253 node_paths=PackedStringArray("character_root")]
 collision_layer = 2
 collision_mask = 0
 monitoring = false
@@ -38,20 +38,25 @@ interaction_kind = 1
 interaction_duration = 1.2
 character_root = NodePath("..")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractableNpc"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractableNpc" unique_id=487687648]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("BoxShape3D_hit")
 
-[node name="ImmunityZone" type="Area3D" parent="."]
+[node name="ImmunityZone" type="Area3D" parent="." unique_id=1403101696]
 collision_layer = 4
 collision_mask = 0
 monitoring = false
 script = ExtResource("4_safe")
 is_passive_immunity = true
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ImmunityZone"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ImmunityZone" unique_id=251007218]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 shape = SubResource("BoxShape3D_imm")
 
-[node name="BalloonBunch" type="Node3D" parent="."]
+[node name="BalloonBunch" type="Node3D" parent="." unique_id=1299608923]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.25, 0)
+
+[node name="VoicePlayer" type="AudioStreamPlayer3D" parent="." unique_id=63154576]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+max_distance = 22.0
+bus = &"Voice"

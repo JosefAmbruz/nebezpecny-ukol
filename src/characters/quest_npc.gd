@@ -10,6 +10,7 @@ enum Role {
 signal quest_interacted(npc: QuestNpc, actor: Node3D, role: Role)
 
 const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
+const DEFAULT_HAT_SCENE: PackedScene = preload("res://assets/hair/bowler_hat.tscn")
 
 @export var role: Role = Role.PADRINO_PACATO
 @export var display_name: String = "Padrino Pacato"
@@ -19,6 +20,9 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 		appearance = value
 		if visuals and value:
 			visuals.appearance = value
+			if not value.headwear_scene and default_hat_scene:
+				visuals.set_headwear(default_hat_scene)
+@export var default_hat_scene: PackedScene = DEFAULT_HAT_SCENE
 @export var interactable: InteractableNpc
 @export var immunity_zone: SafeObject
 @export var balloon_bunch: Node3D
@@ -28,6 +32,11 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 @export var gravity: float = 18.0
 @export var level_min_x: float = -13.0
 @export var level_max_x: float = 13.0
+
+@export_group("Audio (Dabing)")
+@export var voice_on_interact: AudioStream
+
+@onready var _voice_player: AudioStreamPlayer3D = get_node_or_null("VoicePlayer") as AudioStreamPlayer3D
 
 var _looking_right: bool = true
 var _wander_target_x: float = 0.0
@@ -42,8 +51,11 @@ func _ready() -> void:
 	if interactable:
 		interactable.interaction_kind = InteractableNpc.InteractionKind.QUEST
 
-	if visuals and appearance:
-		visuals.appearance = appearance
+	if visuals:
+		if appearance:
+			visuals.appearance = appearance
+		if (not appearance or not appearance.headwear_scene) and default_hat_scene:
+			visuals.set_headwear(default_hat_scene)
 
 	_configure_by_role()
 	_pick_new_wander_target()
@@ -147,4 +159,6 @@ func can_be_interacted_by(actor: Node3D) -> bool:
 
 
 func on_interaction_completed(actor: Node3D, _kind: InteractableNpc.InteractionKind) -> void:
+	if voice_on_interact and _voice_player:
+		AudioManager.play_voice_3d(_voice_player, voice_on_interact)
 	quest_interacted.emit(self, actor, role)

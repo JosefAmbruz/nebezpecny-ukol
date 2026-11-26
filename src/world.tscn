@@ -1,12 +1,15 @@
 [gd_scene format=3 uid="uid://cn13ckef7qu5i"]
 
 [ext_resource type="PackedScene" uid="uid://cslhaif871y5v" path="res://src/player.tscn" id="1_tp5op"]
+[ext_resource type="AudioStream" uid="uid://cpf50ou2mqw3p" path="res://assets/music/theme.mp3" id="2_5xesp"]
 [ext_resource type="PackedScene" path="res://src/ui/interaction_indicator.tscn" id="2_uiind"]
 [ext_resource type="Texture2D" uid="uid://bnt152wwk6mrb" path="res://assets/faces/face4.png" id="3_tnjnu"]
 [ext_resource type="PackedScene" uid="uid://ctuvvi1xre6er" path="res://src/world/safe_object.tscn" id="4_safe"]
 [ext_resource type="Script" uid="uid://bmonou5unw40" path="res://src/characters/character_appearance.gd" id="5_app"]
+[ext_resource type="AudioStream" uid="uid://c0hk2b0gn2870" path="res://assets/dabing/pacato-dabing.wav" id="5_njovb"]
 [ext_resource type="Texture2D" uid="uid://bdq1gp6gj44s7" path="res://assets/faces/face5.png" id="6_eemcn"]
 [ext_resource type="Texture2D" uid="uid://c63kanxt4ith8" path="res://assets/faces/face9.png" id="7_njovb"]
+[ext_resource type="Texture2D" uid="uid://ccvlooqira1os" path="res://assets/environment/door.png" id="8_a3wil"]
 [ext_resource type="Script" uid="uid://nsybtej0atxt" path="res://src/world.gd" id="8_world"]
 [ext_resource type="PackedScene" path="res://src/ui/assassin_list_ui.tscn" id="9_listui"]
 [ext_resource type="PackedScene" path="res://src/ui/game_hud.tscn" id="10_hud"]
@@ -55,6 +58,7 @@ metadata/_custom_type_script = "uid://bmonou5unw40"
 
 [node name="World" type="Node3D" unique_id=1484689679]
 script = ExtResource("8_world")
+background_music = ExtResource("2_5xesp")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=540334264]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
@@ -83,6 +87,7 @@ left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")
 quest_npc_spawn = NodePath("QuestNpcSpawn")
 quest_npc_appearance = SubResource("Resource_7vlx1")
+quest_npc_voice = ExtResource("5_njovb")
 
 [node name="LeftBound" type="Marker3D" parent="Levels/Level1" unique_id=1937204990]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.6, 0)
@@ -91,10 +96,16 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 0.6, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.6, 0)
 
 [node name="QuestNpcSpawn" type="Marker3D" parent="Levels/Level1" unique_id=2083790827]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0.6, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.074249, 0.6, 0)
 
 [node name="SafeObjectL1" parent="Levels/Level1" unique_id=1366988348 instance=ExtResource("4_safe")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.5, -6.8918943)
+
+[node name="Environment" type="Node3D" parent="Levels/Level1" unique_id=904546934]
+
+[node name="Sprite3D" type="Sprite3D" parent="Levels/Level1/Environment" unique_id=119467974]
+transform = Transform3D(0.3812463, 0, 0, 0, 0.43402457, 0, 0, 0, 1, -10.624596, 3.506012, -8.6779175)
+texture = ExtResource("8_a3wil")
 
 [node name="Level2" type="Node3D" parent="Levels" unique_id=714084602 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
@@ -106,6 +117,7 @@ right_bound = NodePath("RightBound")
 quest_npc_spawn = NodePath("QuestNpcSpawn")
 quest_npc_role = 1
 quest_npc_appearance = SubResource("Resource_lsgvq")
+quest_npc_voice = ExtResource("5_njovb")
 preview_color = Color(0.3, 0.65, 0.95, 1)
 
 [node name="LeftBound" type="Marker3D" parent="Levels/Level2" unique_id=1431897030]
@@ -134,6 +146,7 @@ right_bound = NodePath("RightBound")
 quest_npc_spawn = NodePath("QuestNpcSpawn")
 quest_npc_role = 2
 quest_npc_appearance = SubResource("Resource_i1wtg")
+quest_npc_voice = ExtResource("5_njovb")
 preview_color = Color(0.95, 0.55, 0.25, 1)
 
 [node name="LeftBound" type="Marker3D" parent="Levels/Level3" unique_id=1714491107]
