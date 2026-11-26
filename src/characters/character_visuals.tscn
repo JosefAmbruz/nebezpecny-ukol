@@ -160,11 +160,11 @@ material_override = SubResource("StandardMaterial3D_13ep7")
 mesh = SubResource("SphereMesh_kakee")
 
 [node name="EarR" type="Sprite3D" parent="HeadPivot" unique_id=479131079]
-transform = Transform3D(0.36181623, 0, 0, 0, 0.38902172, 0, 0, 0, 1, -0.5531513, 0.46698785, 0.033141136)
+transform = Transform3D(0.3321228, 0, -0.3967372, 0, 0.38902172, 0, 0.14354596, 0, 0.9179323, -0.5531513, 0.46698785, 0.033141136)
 texture = ExtResource("5_4drbo")
 
 [node name="EarR2" type="Sprite3D" parent="HeadPivot" unique_id=815399290]
-transform = Transform3D(0.36181623, 0, 0, 0, 0.38902172, 0, 0, 0, 1, 0.57464916, 0.46698785, 0.06740439)
+transform = Transform3D(0.3316418, 0, 0.39979857, 0, 0.38902172, 0, -0.14465359, 0, 0.916603, 0.5443757, 0.46698785, 0.06740439)
 flip_h = true
 texture = ExtResource("5_4drbo")
 

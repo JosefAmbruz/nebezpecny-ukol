@@ -75,6 +75,8 @@ func _run_test() -> void:
 	var civilian := world._director._active_civilians[0]
 	civilian.interactable.complete_interaction(world._player)
 	assert(civilian.state == NpcBase.State.DEAD and civilian.interactable.collision_layer == 0)
+	assert(world._broken_toothbrushes == 1 and world._director._death_mark_records.size() == 2)
+	assert(world._game_hud._brush_icons[2].texture == world._game_hud._broken_brush_tex)
 	var penalty := civilian.visuals.get_node("ScorePopup") as Label3D
 	assert(penalty.text == "-50" and penalty.modulate.r > penalty.modulate.g)
 
@@ -171,6 +173,15 @@ func _run_test() -> void:
 
 	previous_id = world.get_instance_id()
 	await _press_key(KEY_F5)
+	world = await _wait_for_match(previous_id)
+	for i in range(3):
+		var civilian_target := world._director._active_civilians[0]
+		civilian_target.interactable.complete_interaction(world._player)
+	assert(world._broken_toothbrushes == 3 and paused)
+	assert(world._game_hud.get_node("%EndTitleLabel").text == "Zlomil jsi všechny kartáčky!")
+	assert(world._game_hud.get_node("%Leaderboard").is_visible_in_tree())
+	previous_id = world.get_instance_id()
+	await _press_key(KEY_ENTER)
 	world = await _wait_for_match(previous_id)
 	var assassin := world.assassins[0]
 	assassin.has_killed = true

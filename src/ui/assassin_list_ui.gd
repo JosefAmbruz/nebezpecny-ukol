@@ -12,6 +12,7 @@ const ENTRY_SCENE: PackedScene = preload("res://src/ui/assassin_list_entry.tscn"
 
 var _entries_by_id: Dictionary = {}
 var _assassins: Array[CharacterData] = []
+var _input_locked: bool = false
 
 
 func _ready() -> void:
@@ -19,7 +20,18 @@ func _ready() -> void:
 	_update_count()
 
 
+func set_input_locked(locked: bool) -> void:
+	_input_locked = locked
+	if _hint_label:
+		_hint_label.visible = not locked
+	if locked and _list_panel and _list_panel.visible:
+		_list_panel.visible = false
+		list_visibility_changed.emit(false)
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _input_locked:
+		return
 	if event.is_action_pressed(&"toggle_assassin_list"):
 		toggle_list()
 		get_viewport().set_input_as_handled()
