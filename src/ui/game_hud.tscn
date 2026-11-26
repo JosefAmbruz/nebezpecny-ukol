@@ -2,6 +2,19 @@
 
 [ext_resource type="Script" path="res://src/ui/game_hud.gd" id="1_hud"]
 
+[sub_resource type="InputEventKey" id="InputEventKey_restart"]
+keycode = 4194336
+
+[sub_resource type="Shortcut" id="Shortcut_restart"]
+events = [SubResource("InputEventKey_restart")]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_results"]
+bg_color = Color(0.075, 0.105, 0.13, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
 [node name="GameHud" type="CanvasLayer"]
 layer = 4
 script = ExtResource("1_hud")
@@ -53,43 +66,90 @@ layout_mode = 2
 text = "Úkol: Najdi Madrinu Metticulosu s balónky (L2)"
 autowrap_mode = 2
 
-[node name="EndGamePanel" type="PanelContainer" parent="."]
+[node name="Restart" type="Button" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+focus_mode = 0
+disabled = true
+shortcut = SubResource("Shortcut_restart")
+text = "Restartovat kolo [F5]"
+
+[node name="EndGamePanel" type="ColorRect" parent="."]
+process_mode = 2
 unique_name_in_owner = true
 visible = false
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -220.0
-offset_top = -90.0
-offset_right = 220.0
-offset_bottom = 90.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.025, 0.04, 0.055, 0.82)
+
+[node name="Center" type="CenterContainer" parent="EndGamePanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="EndGamePanel"]
+[node name="Panel" type="PanelContainer" parent="EndGamePanel/Center"]
+custom_minimum_size = Vector2(440, 0)
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 18
+theme_override_styles/panel = SubResource("StyleBoxFlat_results")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="EndGamePanel/MarginContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="EndGamePanel/Center/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 32
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 32
+theme_override_constants/margin_bottom = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="EndGamePanel/Center/Panel/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
-alignment = 1
 
-[node name="EndTitleLabel" type="Label" parent="EndGamePanel/MarginContainer/VBoxContainer"]
+[node name="EndTitleLabel" type="Label" parent="EndGamePanel/Center/Panel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.94, 0.86, 1)
 theme_override_font_sizes/font_size = 28
 text = "Konec hry"
-horizontal_alignment = 1
 
-[node name="EndSummaryLabel" type="Label" parent="EndGamePanel/MarginContainer/VBoxContainer"]
+[node name="EndSummaryLabel" type="Label" parent="EndGamePanel/Center/Panel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_colors/font_color = Color(0.73, 0.78, 0.75, 1)
 text = "Skóre: 0"
-horizontal_alignment = 1
 autowrap_mode = 2
+
+[node name="Leaderboard" type="VBoxContainer" parent="EndGamePanel/Center/Panel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Divider" type="HSeparator" parent="EndGamePanel/Center/Panel/MarginContainer/VBoxContainer/Leaderboard"]
+layout_mode = 2
+
+[node name="Heading" type="Label" parent="EndGamePanel/Center/Panel/MarginContainer/VBoxContainer/Leaderboard"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.80, 0.39, 1)
+theme_override_font_sizes/font_size = 20
+text = "Pořadí podle skóre"
+
+[node name="LeaderboardRows" type="RichTextLabel" parent="EndGamePanel/Center/Panel/MarginContainer/VBoxContainer/Leaderboard"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+theme_override_constants/line_separation = 5
+
+[node name="PlayAgain" type="Button" parent="EndGamePanel/Center/Panel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 42)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Hrát znovu"
+
+[connection signal="pressed" from="TopLeftPanel/MarginContainer/VBoxContainer/Restart" to="." method="_on_restart_pressed"]
+[connection signal="pressed" from="EndGamePanel/Center/Panel/MarginContainer/VBoxContainer/PlayAgain" to="." method="_on_restart_pressed"]

@@ -70,6 +70,7 @@ func _ready() -> void:
 
 
 func _start_match() -> void:
+	set_process(false)
 	assassins = CharacterGenerator.generate_assassins(
 		appearance_pool,
 		total_assassins,
@@ -95,6 +96,8 @@ func _start_match() -> void:
 	var start_zone := _director.get_zone_for_x(_player.global_position.x)
 	if start_zone:
 		_director.activate_level(start_zone.level_id)
+	_game_hud.enable_restart()
+	set_process(true)
 
 
 func _physics_process(delta: float) -> void:
@@ -178,11 +181,12 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 	if npc.character_data and npc.character_data.is_assassin and _assassin_list_ui:
 		_assassin_list_ui.mark_assassin_dead(npc.character_data.id)
 
+	var points := score_assassin_kill if npc.is_assassin else score_civilian_penalty
 	if killer == _player:
-		if npc.is_assassin:
-			_add_score(score_assassin_kill)
-		else:
-			_add_score(score_civilian_penalty)
+		_add_score(points)
+	elif killer is NpcBase and killer.character_data and killer.character_data.is_assassin:
+		killer.character_data.has_killed = true
+		killer.character_data.kill_score += points
 
 
 func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role) -> void:
@@ -211,7 +215,31 @@ func _on_player_killed(attacker: Node3D) -> void:
 	var killer_name := "neznámý assassin"
 	if attacker is NpcBase and not attacker.display_name.is_empty():
 		killer_name = attacker.display_name
-	_end_match("Byl jsi vyřazen kartáčkem!", "Dostal tě %s.\nKonečné skóre: %d" % [killer_name, _score])
+	if attacker is NpcBase and attacker.character_data and attacker.character_data.is_assassin:
+		attacker.character_data.has_killed = true
+		attacker.character_data.kill_score += score_assassin_kill
+	_end_match("Byl jsi zabit", "Dostal tě %s.\nKonečné skóre: %d" % [killer_name, _score])
+
+
+func _format_leaderboard() -> String:
+	var ranking: Array[Dictionary] = [{"name": "Ty", "score": _score}]
+	for assassin in assassins:
+		if assassin.has_killed:
+			var score := assassin.kill_score
+			if assassin.quest_stage == CharacterData.QuestStage.COMPLETED:
+				score += score_quest_bonus
+			ranking.append({"name": assassin.display_name, "score": score})
+	ranking.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a["score"] == b["score"]:
+			return a["name"] < b["name"]
+		return a["score"] > b["score"]
+	)
+
+	var rows := PackedStringArray()
+	for i in range(ranking.size()):
+		var entry := ranking[i]
+		rows.append("%d. %s — %d" % [i + 1, entry["name"], entry["score"]])
+	return "\n".join(rows)
 
 
 func _add_score(delta_score: int) -> void:
@@ -224,5 +252,9 @@ func _end_match(title: String, summary: String) -> void:
 	if _match_ended:
 		return
 	_match_ended = true
+	_player.set_movement_locked(true)
+	_assassin_list_ui.hide()
+	$InteractionIndicator.hide()
+	get_tree().paused = true
 	if _game_hud:
-		_game_hud.show_end_screen(title, summary)
+		_game_hud.show_end_screen(title, summary, _format_leaderboard())

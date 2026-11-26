@@ -34,6 +34,10 @@ func set_level_name(level_name: String) -> void:
 	_level_label.text = level_name
 
 
+func enable_restart() -> void:
+	%Restart.disabled = false
+
+
 func set_quest_state(has_balloon: bool, has_battery: bool, completed: bool) -> void:
 	if completed:
 		_quest_label.text = "Úkol: Odevzdáno Padrinovi (+bonus)"
@@ -45,7 +49,16 @@ func set_quest_state(has_balloon: bool, has_battery: bool, completed: bool) -> v
 		_quest_label.text = "Úkol: Najdi Madrinu Metticulosu s balónky (L2)"
 
 
-func show_end_screen(title: String, summary: String) -> void:
+func show_end_screen(title: String, summary: String, leaderboard: String) -> void:
 	_end_title_label.text = title
 	_end_summary_label.text = summary
-	_end_game_panel.visible = true
+	%LeaderboardRows.text = leaderboard
+	$TopLeftPanel.hide()
+	_end_game_panel.show()
+	%PlayAgain.grab_focus()
+
+
+func _on_restart_pressed() -> void:
+	var tree := get_tree()
+	if tree.reload_current_scene() == OK:
+		tree.paused = false
