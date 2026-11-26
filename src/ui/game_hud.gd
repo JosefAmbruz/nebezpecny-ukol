@@ -1,9 +1,7 @@
 class_name GameHud
 extends CanvasLayer
 
-signal restart_requested
-signal menu_requested
-
+const DISTRICTS := ["Start", "Náměstí", "Park"]
 const TOOTHBRUSH_SHEET: Texture2D = preload("res://assets/misc/toothbrush-ui.png")
 
 @export var toothbrush_icon_size: Vector2 = Vector2(64, 52)
@@ -12,16 +10,19 @@ const TOOTHBRUSH_SHEET: Texture2D = preload("res://assets/misc/toothbrush-ui.png
 @onready var _score_label: Label = %ScoreLabel
 @onready var _level_label: Label = %LevelLabel
 @onready var _quest_label: Label = %QuestLabel
+@onready var _quest_route: Label = %QuestRoute
 @onready var _toothbrush_container: HBoxContainer = %ToothbrushContainer
 @onready var _end_game_panel: Control = %EndGamePanel
 @onready var _end_title_label: Label = %EndTitleLabel
 @onready var _end_summary_label: Label = %EndSummaryLabel
-@onready var _restart_button: Button = %RestartButton
-@onready var _menu_button: Button = %MenuButton
 
 var _whole_brush_tex: AtlasTexture = null
 var _broken_brush_tex: AtlasTexture = null
 var _brush_icons: Array[TextureRect] = []
+
+var _current_level_id: int = -1
+var _quest_level_id: int = 1
+var _defense_feedback: Tween
 
 
 func _ready() -> void:
@@ -31,11 +32,6 @@ func _ready() -> void:
 	set_score(0)
 	set_quest_state(false, false, false)
 	set_toothbrushes(3, 0)
-
-	if _restart_button:
-		_restart_button.pressed.connect(func() -> void: restart_requested.emit())
-	if _menu_button:
-		_menu_button.pressed.connect(func() -> void: menu_requested.emit())
 
 
 func _build_brush_textures() -> void:
@@ -83,29 +79,90 @@ func set_clock_progress(progress: float) -> void:
 	var total_minutes := int(floor(clamped * 60.0))
 	var hours := 18 + int(total_minutes / 60)
 	var minutes := total_minutes % 60
-	_clock_label.text = "%02d:%02d" % [hours, minutes]
+	_clock_label.text = "%02d:%02d / 19:00" % [hours, minutes]
 
 
 func set_score(score: int) -> void:
 	_score_label.text = "Skóre: %d" % score
 
 
-func set_level_name(level_name: String) -> void:
+func set_level(level_name: String, level_id: int) -> void:
 	_level_label.text = level_name
+	_current_level_id = level_id
+	_update_quest_route()
+
+
+func enable_restart() -> void:
+	%Restart.disabled = false
 
 
 func set_quest_state(has_balloon: bool, has_battery: bool, completed: bool) -> void:
 	if completed:
-		_quest_label.text = "Úkol: Odevzdáno Padrinovi (+bonus)"
+		_quest_label.text = "Úkol splněn | Bonus připsán"
+		_quest_level_id = -1
 	elif has_balloon and has_battery:
-		_quest_label.text = "Úkol: Balónek + AAA baterka → vrať se k Padrinovi (L1)"
+		_quest_label.text = "Odnes balónek a baterii Padrinu Pacatovi"
+		_quest_level_id = 0
 	elif has_balloon:
-		_quest_label.text = "Úkol: Máš balónek → najdi Padrina Morettiho (L3)"
+		_quest_label.text = "Vyzvedni baterii u Padrina Morettiho"
+		_quest_level_id = 2
 	else:
-		_quest_label.text = "Úkol: Najdi Madrinu Metticulosu s balónky (L2)"
+		_quest_label.text = "Vyzvedni balónek u Madriny Metticulosy"
+		_quest_level_id = 1
+	_update_quest_route()
 
 
-func show_end_screen(title: String, summary: String) -> void:
+func _update_quest_route() -> void:
+	_quest_route.visible = _quest_level_id >= 0
+	if not _quest_route.visible:
+		return
+	var destination: String = DISTRICTS[_quest_level_id]
+	if _current_level_id < 0:
+		_quest_route.text = destination
+	elif _quest_level_id == _current_level_id:
+		_quest_route.text = "%s | Jsi na místě" % destination
+	else:
+		var direction := "doprava" if _quest_level_id > _current_level_id else "doleva"
+		_quest_route.text = "%s | Jdi %s" % [destination, direction]
+
+
+func show_defense_prompt() -> void:
+	if _defense_feedback:
+		_defense_feedback.kill()
+	%DefenseLabel.text = "[F] Odraz útok"
+	set_defense_progress(1.0)
+	$TopLeftPanel.hide()
+	%DefenseTime.show()
+	%DefensePanel.show()
+
+
+func set_defense_progress(progress: float) -> void:
+	%DefenseTime.value = progress
+
+
+func finish_defense_prompt(defended: bool) -> void:
+	if not defended:
+		%DefensePanel.hide()
+		return
+	%DefenseTime.hide()
+	%DefenseLabel.text = "Útok odražen"
+	$TopLeftPanel.show()
+	_defense_feedback = create_tween()
+	_defense_feedback.tween_interval(0.75)
+	_defense_feedback.tween_callback(%DefensePanel.hide)
+
+
+func show_end_screen(title: String, summary: String, leaderboard: String) -> void:
 	_end_title_label.text = title
 	_end_summary_label.text = summary
-	_end_game_panel.visible = true
+	%LeaderboardRows.text = leaderboard
+	%DefensePanel.hide()
+	$TopLeftPanel.hide()
+	_end_game_panel.show()
+	%PlayAgain.grab_focus()
+
+
+func _on_restart_pressed() -> void:
+	var tree := get_tree()
+	if tree.reload_current_scene() == OK:
+		tree.paused = false

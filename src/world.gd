@@ -1,5 +1,8 @@
 extends Node3D
 
+const DEFENSE_WINDOW_MS := 1500
+const DEFENSE_TIME_SCALE := 0.18
+
 @export var appearance_pool: AppearancePool = preload("res://src/characters/default_appearance_pool.tres")
 @export var total_assassins: int = 8
 @export var quest_assassins: int = 4
@@ -58,6 +61,9 @@ var _score: int = 0
 var _broken_toothbrushes: int = 0
 var _quest_completed: bool = false
 var _match_ended: bool = false
+var _defense_attacker: NpcBase
+var _defense_deadline_ms: int = 0
+var _normal_time_scale: float = 1.0
 
 
 func _ready() -> void:
@@ -79,6 +85,7 @@ func _ready() -> void:
 	_director.npc_died.connect(_on_npc_died)
 	_director.quest_npc_interacted.connect(_on_quest_npc_interacted)
 	_director.level_activated.connect(_on_level_activated)
+	_player.defense_requested.connect(_start_defense)
 	_player.killed_by_assassin.connect(_on_player_killed)
 	_player.interaction_started.connect(_on_player_interaction_started)
 	_player.interaction_progress_changed.connect(_on_player_interaction_progress_changed)
@@ -86,14 +93,12 @@ func _ready() -> void:
 	_player.interaction_completed.connect(_on_player_interaction_completed)
 	if _assassin_list_ui:
 		_assassin_list_ui.list_visibility_changed.connect(_on_assassin_list_visibility_changed)
-	if _game_hud:
-		_game_hud.restart_requested.connect(_on_restart_requested)
-		_game_hud.menu_requested.connect(_on_menu_requested)
 
 	_start_match()
 
 
 func _start_match() -> void:
+	set_process(false)
 	assassins = CharacterGenerator.generate_assassins(
 		appearance_pool,
 		total_assassins,
@@ -122,13 +127,15 @@ func _start_match() -> void:
 	var start_zone := _director.get_zone_for_x(_player.global_position.x)
 	if start_zone:
 		_director.activate_level(start_zone.level_id)
+	_game_hud.enable_restart()
+	set_process(true)
 
 	if background_music and (not _active_zone or not _active_zone.music_override):
 		AudioManager.play_music(background_music)
 
 
 func _physics_process(delta: float) -> void:
-	if _match_ended:
+	if _match_ended or _defense_deadline_ms != 0:
 		return
 
 	# Omezení pohybu hráče na celkovou šířku 3 levelů
@@ -145,7 +152,76 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if _match_ended:
 		return
+	if _defense_deadline_ms != 0:
+		if not is_instance_valid(_defense_attacker) or _defense_attacker.state == NpcBase.State.DEAD:
+			_finish_defense(true)
+			return
+		var remaining_ms := _defense_deadline_ms - Time.get_ticks_msec()
+		if remaining_ms <= 0:
+			_finish_defense(false)
+		else:
+			_game_hud.set_defense_progress(float(remaining_ms) / DEFENSE_WINDOW_MS)
+		return
 	_update_match_clock(delta)
+
+
+func _input(event: InputEvent) -> void:
+	if _defense_deadline_ms == 0:
+		return
+	get_viewport().set_input_as_handled()
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
+		_finish_defense(Time.get_ticks_msec() < _defense_deadline_ms)
+
+
+func _exit_tree() -> void:
+	if _defense_deadline_ms != 0:
+		Engine.time_scale = _normal_time_scale
+
+
+func _start_defense(attacker: NpcBase) -> void:
+	if _match_ended or _defense_deadline_ms != 0:
+		if attacker != _defense_attacker and attacker.visuals:
+			attacker.visuals.cancel_attack_windup()
+		return
+	_defense_attacker = attacker
+	_defense_deadline_ms = Time.get_ticks_msec() + DEFENSE_WINDOW_MS
+	_normal_time_scale = Engine.time_scale
+	Engine.time_scale *= DEFENSE_TIME_SCALE
+	_player.set_movement_locked(true)
+	_assassin_list_ui.hide()
+	$InteractionIndicator.hide()
+	attacker.set_physics_process(false)
+	if attacker.visuals:
+		attacker.visuals.play_attack_windup(_player, _player_camera.global_position.z - 2.0)
+	var focus_x := lerpf(attacker.global_position.x, _player.global_position.x, 0.2)
+	_zoom_camera(_camera_base_size * 0.48, 0.28).parallel().tween_property(
+		_player_camera, "global_position:x", focus_x, 0.28
+	)
+	_game_hud.show_defense_prompt()
+
+
+func _finish_defense(defended: bool) -> void:
+	var attacker := _defense_attacker
+	var attacker_active := is_instance_valid(attacker) and attacker.state != NpcBase.State.DEAD
+	defended = defended or not attacker_active or _player.is_safe_from_attack()
+	_defense_attacker = null
+	_defense_deadline_ms = 0
+	Engine.time_scale = _normal_time_scale
+	_game_hud.finish_defense_prompt(defended)
+	if attacker_active:
+		attacker.set_physics_process(true)
+		if attacker.visuals:
+			if defended:
+				attacker.visuals.cancel_attack_windup()
+			else:
+				attacker.visuals.play_attack(_player)
+
+	if defended:
+		_assassin_list_ui.show()
+		$InteractionIndicator.show()
+		_on_assassin_list_visibility_changed(_is_list_open)
+	else:
+		_player.on_killed_by_assassin(attacker)
 
 
 func _on_assassin_list_visibility_changed(is_open: bool) -> void:
@@ -155,14 +231,19 @@ func _on_assassin_list_visibility_changed(is_open: bool) -> void:
 
 	if not _player_camera:
 		return
+	var target_size := _camera_base_size * list_zoom_factor if is_open else _camera_base_size
+	_zoom_camera(target_size, list_zoom_duration)
+
+
+func _zoom_camera(target_size: float, duration: float) -> Tween:
 	if _camera_zoom_tween and _camera_zoom_tween.is_valid():
 		_camera_zoom_tween.kill()
 
-	var target_size := _camera_base_size * list_zoom_factor if is_open else _camera_base_size
-	_camera_zoom_tween = create_tween()
+	_camera_zoom_tween = create_tween().set_ignore_time_scale(true)
 	_camera_zoom_tween.set_trans(Tween.TRANS_CUBIC)
 	_camera_zoom_tween.set_ease(Tween.EASE_OUT)
-	_camera_zoom_tween.tween_property(_player_camera, "size", target_size, list_zoom_duration)
+	_camera_zoom_tween.tween_property(_player_camera, "size", target_size, duration)
+	return _camera_zoom_tween
 
 
 func _on_player_interaction_started(target: InteractableNpc, kind: InteractableNpc.InteractionKind) -> void:
@@ -255,7 +336,7 @@ func _update_match_clock(delta: float) -> void:
 func _on_level_activated(zone: LevelZone) -> void:
 	_active_zone = zone
 	if _game_hud:
-		_game_hud.set_level_name(zone.level_name)
+		_game_hud.set_level(zone.level_name, zone.level_id)
 	AudioManager.play_ambient(zone.ambient_stream)
 	AudioManager.set_ambient_oneshots(zone.ambient_oneshots)
 	if zone.music_override:
@@ -268,21 +349,21 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 	if npc.character_data and npc.character_data.is_assassin and _assassin_list_ui:
 		_assassin_list_ui.mark_assassin_dead(npc.character_data.id)
 
+	var points := score_assassin_kill if npc.is_assassin else score_civilian_penalty
 	if killer == _player:
-		if npc.is_assassin:
-			AudioManager.play_sfx(sfx_assassin_tag)
-			_add_score(score_assassin_kill)
-		else:
-			AudioManager.play_sfx(sfx_brush_break)
-			_add_score(score_civilian_penalty)
+		AudioManager.play_sfx(sfx_assassin_tag if npc.is_assassin else sfx_brush_break)
+		_add_score(points)
+		if npc.visuals:
+			npc.visuals.show_score_popup(points)
+		if not npc.is_assassin:
 			_broken_toothbrushes += 1
-			if _game_hud:
-				_game_hud.set_toothbrushes(max_toothbrushes, _broken_toothbrushes)
+			_game_hud.set_toothbrushes(max_toothbrushes, _broken_toothbrushes)
 			if _broken_toothbrushes >= max_toothbrushes:
-				_end_match(
-					"Zlomil jsi všechny kartáčky!",
-					"Omylem jsi vyřadil %d civilisty.\nKonečné skóre: %d" % [_broken_toothbrushes, _score]
-				)
+				_end_match("Zlomil jsi všechny kartáčky!", "Omylem jsi vyřadil %d civilisty.\nKonečné skóre: %d" % [_broken_toothbrushes, _score])
+	elif killer is NpcBase and killer.character_data and killer.character_data.is_assassin:
+		killer.character_data.has_killed = true
+		killer.character_data.kill_score += points
+
 
 
 func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role) -> void:
@@ -310,16 +391,38 @@ func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role
 		_game_hud.set_quest_state(_player.has_balloon, _player.has_battery, _quest_completed)
 
 
-func _on_player_killed(attacker: Node3D) -> void:
+func _on_player_killed(attacker: Node3D, death_animation: Tween) -> void:
 	AudioManager.play_sfx(sfx_player_killed)
-	if _player.visuals:
-		_player.visuals.visible = false
 	_director.spawn_death_mark(_player.global_position, "Ty (Hráč)", true)
 
 	var killer_name := "neznámý assassin"
 	if attacker is NpcBase and not attacker.display_name.is_empty():
 		killer_name = attacker.display_name
-	_end_match("Byl jsi vyřazen kartáčkem!", "Dostal tě %s.\nKonečné skóre: %d" % [killer_name, _score])
+	if attacker is NpcBase and attacker.character_data and attacker.character_data.is_assassin:
+		attacker.character_data.has_killed = true
+		attacker.character_data.kill_score += score_assassin_kill
+	_end_match("Byl jsi zabit", "Dostal tě %s.\nKonečné skóre: %d" % [killer_name, _score], death_animation)
+
+
+func _format_leaderboard() -> String:
+	var ranking: Array[Dictionary] = [{"name": "Ty", "score": _score}]
+	for assassin in assassins:
+		if assassin.has_killed:
+			var score := assassin.kill_score
+			if assassin.quest_stage == CharacterData.QuestStage.COMPLETED:
+				score += score_quest_bonus
+			ranking.append({"name": assassin.display_name, "score": score})
+	ranking.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		if a["score"] == b["score"]:
+			return a["name"] < b["name"]
+		return a["score"] > b["score"]
+	)
+
+	var rows := PackedStringArray()
+	for i in range(ranking.size()):
+		var entry := ranking[i]
+		rows.append("%d. %s — %d" % [i + 1, entry["name"], entry["score"]])
+	return "\n".join(rows)
 
 
 func _add_score(delta_score: int) -> void:
@@ -328,22 +431,15 @@ func _add_score(delta_score: int) -> void:
 		_game_hud.set_score(_score)
 
 
-func _end_match(title: String, summary: String) -> void:
+func _end_match(title: String, summary: String, death_animation: Tween = null) -> void:
 	if _match_ended:
 		return
 	_match_ended = true
-	if _player:
-		_player.set_movement_locked(true)
-	if _assassin_list_ui:
-		_assassin_list_ui.set_input_locked(true)
+	_player.set_movement_locked(true)
+	_assassin_list_ui.hide()
+	$InteractionIndicator.hide()
+	get_tree().paused = true
+	if death_animation:
+		await death_animation.finished
 	if _game_hud:
-		_game_hud.show_end_screen(title, summary)
-
-
-func _on_restart_requested() -> void:
-	get_tree().reload_current_scene()
-
-
-func _on_menu_requested() -> void:
-	# TODO: Přechod do hlavního menu, až ho kolega dodělá (např. get_tree().change_scene_to_file(...))
-	pass
+		_game_hud.show_end_screen(title, summary, _format_leaderboard())
