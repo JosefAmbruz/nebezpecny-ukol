@@ -174,7 +174,7 @@ func _update_match_clock(delta: float) -> void:
 func _on_level_activated(zone: LevelZone) -> void:
 	_active_zone = zone
 	if _game_hud:
-		_game_hud.set_level_name(zone.level_name)
+		_game_hud.set_level(zone.level_name, zone.level_id)
 
 
 func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:

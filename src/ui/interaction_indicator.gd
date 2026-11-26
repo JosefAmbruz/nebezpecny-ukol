@@ -9,6 +9,8 @@ extends CanvasLayer
 
 @onready var _cursor_ring: Control = $CursorRing
 @onready var _status_label: Label = $StatusLabel
+@onready var _prompt: PanelContainer = $CursorPrompt
+@onready var _prompt_label: Label = $CursorPrompt/Text
 
 var _active: bool = false
 var _progress: float = 0.0
@@ -22,6 +24,7 @@ func _ready() -> void:
 
 	if player:
 		player.interaction_started.connect(_on_interaction_started)
+		player.interaction_hint_changed.connect(_on_interaction_hint_changed)
 		player.interaction_progress_changed.connect(_on_interaction_progress_changed)
 		player.interaction_cancelled.connect(_on_interaction_ended)
 		player.interaction_completed.connect(_on_interaction_completed)
@@ -29,10 +32,33 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if not _active:
-		return
-	_cursor_ring.position = get_viewport().get_mouse_position()
-	_cursor_ring.queue_redraw()
+	var cursor := get_viewport().get_mouse_position()
+	if _active:
+		_cursor_ring.position = cursor
+		_cursor_ring.queue_redraw()
+	if _prompt.visible:
+		var limit := get_viewport().get_visible_rect().size - _prompt.size - Vector2(8, 8)
+		_prompt.position = (cursor + Vector2(20, 26)).clamp(Vector2(8, 8), limit.max(Vector2(8, 8)))
+
+
+func _on_interaction_hint_changed(hint: Player.InteractionHint) -> void:
+	match hint:
+		Player.InteractionHint.APPROACH:
+			_prompt_label.text = "Přijdi blíž"
+		Player.InteractionHint.TALK:
+			_prompt_label.text = "Drž levé tlačítko | Promluvit"
+		Player.InteractionHint.QUEST_UNAVAILABLE:
+			_prompt_label.text = "Řiď se aktuálním úkolem"
+		Player.InteractionHint.PROTECTED:
+			_prompt_label.text = "Cíl je v bezpečí"
+		Player.InteractionHint.ATTACK:
+			_prompt_label.text = "Drž levé tlačítko | Zaútočit"
+		Player.InteractionHint.WAIT:
+			_prompt_label.text = "Cíl tě vidí | Počkej, až se otočí"
+		Player.InteractionHint.RELEASE:
+			_prompt_label.text = "Cíl tě vidí | Pusť tlačítko"
+	_prompt.visible = hint != Player.InteractionHint.NONE
+	_prompt.set_deferred("size", Vector2.ZERO)
 
 
 func _on_interaction_started(_target: InteractableNpc, kind: InteractableNpc.InteractionKind) -> void:
@@ -62,9 +88,9 @@ func _on_interaction_completed(_target: InteractableNpc, _kind: InteractableNpc.
 
 func _on_safe_state_changed(is_safe: bool, can_lean: bool) -> void:
 	if is_safe:
-		_status_label.text = "V bezpečí (opřený / imunita)"
+		_status_label.text = "V bezpečí před útokem"
 	elif can_lean:
-		_status_label.text = "[E] Opřít se"
+		_status_label.text = "[E] Opřít se a chránit se"
 	else:
 		_status_label.text = ""
 

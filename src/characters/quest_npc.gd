@@ -46,6 +46,7 @@ func _ready() -> void:
 		visuals.appearance = appearance
 
 	_configure_by_role()
+	$NameMarker.text = display_name
 	_pick_new_wander_target()
 
 

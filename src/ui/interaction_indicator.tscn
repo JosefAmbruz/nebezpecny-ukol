@@ -2,6 +2,17 @@
 
 [ext_resource type="Script" path="res://src/ui/interaction_indicator.gd" id="1_ind"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hint"]
+bg_color = Color(0.075, 0.105, 0.13, 0.96)
+content_margin_left = 12.0
+content_margin_top = 6.0
+content_margin_right = 12.0
+content_margin_bottom = 6.0
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
 [node name="InteractionIndicator" type="CanvasLayer"]
 script = ExtResource("1_ind")
 
@@ -10,6 +21,16 @@ layout_mode = 3
 anchors_preset = 0
 mouse_filter = 2
 
+[node name="CursorPrompt" type="PanelContainer" parent="."]
+visible = false
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hint")
+
+[node name="Text" type="Label" parent="CursorPrompt"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 16
+
 [node name="StatusLabel" type="Label" parent="."]
 anchors_preset = 7
 anchor_left = 0.5
@@ -17,10 +38,33 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -160.0
-offset_top = -48.0
+offset_top = -84.0
 offset_right = 160.0
-offset_bottom = -20.0
+offset_bottom = -52.0
 grow_horizontal = 2
 grow_vertical = 0
+theme_override_colors/font_color = Color(0.85, 0.95, 1, 1)
+theme_override_colors/font_outline_color = Color(0.075, 0.105, 0.13, 1)
+theme_override_constants/outline_size = 7
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="Controls" type="PanelContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_top = -50.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hint")
+
+[node name="Text" type="Label" parent="Controls"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.82, 0.87, 0.86, 1)
+text = "A / D  Pohyb     |     Myš  Pohled     |     Drž levé tlačítko  Akce"
+horizontal_alignment = 1

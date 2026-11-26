@@ -13,8 +13,20 @@ func _run_test() -> void:
 	assert(change_scene_to_file(ProjectSettings.get_setting("application/run/main_scene")) == OK)
 	await scene_changed
 	assert(current_scene.name == &"TitleScreen")
+	var how_to := current_scene.get_node("%HowTo") as Button
+	var instructions := current_scene.get_node("%HowToContent") as Control
+	assert(not instructions.visible)
+	how_to.grab_focus()
+	await _press_key(KEY_ENTER)
+	await process_frame
+	assert(instructions.visible)
+	await _press_key(KEY_ENTER)
+	await process_frame
+	assert(not instructions.visible)
+	current_scene.get_node("Center/Content/Start").grab_focus()
 	await _press_key(KEY_ENTER)
 	var world := await _wait_for_match()
+	assert(world._game_hud.get_node("%QuestRoute").text == "Náměstí | Jdi doprava")
 	world._player.position.x = 0.0
 	await physics_frame
 	await physics_frame
@@ -23,6 +35,13 @@ func _run_test() -> void:
 	var killer := OffScreenDirector.NPC_BASE_SCENE.instantiate() as NpcBase
 	killer.apply_character_data(world.assassins[0])
 	world.add_child(killer)
+	killer.position = world._player.position + Vector3(3.0, 0.0, 0.0)
+	assert(world._player._get_interaction_hint(killer.interactable) == Player.InteractionHint.APPROACH)
+	killer.position.x = world._player.position.x + 1.0
+	killer._looking_right = true
+	assert(world._player._get_interaction_hint(killer.interactable) == Player.InteractionHint.ATTACK)
+	killer._looking_right = false
+	assert(world._player._get_interaction_hint(killer.interactable) == Player.InteractionHint.WAIT)
 	var victim := NpcBase.new()
 	victim.apply_character_data(world.assassins[1])
 	world.add_child(victim)
@@ -44,11 +63,15 @@ func _run_test() -> void:
 	assert(reward.text == "+100" and reward.modulate.g > reward.modulate.r)
 	assert(world._score == 50)
 	world._director.activate_level(1)
-	world._director.activate_level(0)
-
+	assert(world._game_hud.get_node("%QuestRoute").text == "Náměstí | Jsi na místě")
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.MADRINA_METTICULOSA)
+	assert(world._game_hud.get_node("%QuestRoute").text == "Park | Jdi doprava")
+	world._director.activate_level(2)
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.PADRINO_MORETTI)
+	assert(world._game_hud.get_node("%QuestRoute").text == "Start | Jdi doleva")
+	world._director.activate_level(0)
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.PADRINO_PACATO)
+	assert(not world._game_hud.get_node("%QuestRoute").visible)
 	world._assassin_list_ui.toggle_list()
 	killer.position = world._player.position + Vector3(-1.0, 0.0, 0.0)
 	world._player._looking_right = true
@@ -92,7 +115,7 @@ func _run_test() -> void:
 	world._update_match_clock(world.match_duration_seconds)
 	assert(paused and world._game_hud.get_node("%Leaderboard").is_visible_in_tree())
 	assert(world._game_hud.get_node("%LeaderboardRows").text == "1. %s — 100\n2. Ty — 0" % assassin.display_name)
-	print("Title, kill score popups, persistent corpses, results, input lock, and restarts passed.")
+	print("Onboarding, interaction hints, quest routing, combat, results, and restarts passed.")
 	quit()
 
 

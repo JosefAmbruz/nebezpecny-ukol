@@ -78,7 +78,7 @@ shape = SubResource("ConcavePolygonShape3D_eemcn")
 
 [node name="Level1" type="Node3D" parent="Levels" unique_id=688422837 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
-level_name = "Level 1 – Start (Padrino Pacato)"
+level_name = "Start"
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")
 quest_npc_spawn = NodePath("QuestNpcSpawn")
@@ -99,7 +99,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.5, -6.8918943)
 [node name="Level2" type="Node3D" parent="Levels" unique_id=714084602 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
 level_id = 1
-level_name = "Level 2 – Náměstí (Madrina Metticulosa)"
+level_name = "Náměstí"
 civilian_count = 5
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")
@@ -127,7 +127,7 @@ mesh = SubResource("BoxMesh_marker")
 [node name="Level3" type="Node3D" parent="Levels" unique_id=1021442553 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
 level_id = 2
-level_name = "Level 3 – Park (Padrino Moretti)"
+level_name = "Park"
 civilian_count = 5
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")

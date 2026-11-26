@@ -15,6 +15,13 @@ corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_hud"]
+bg_color = Color(0.075, 0.105, 0.13, 0.94)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
 [node name="GameHud" type="CanvasLayer"]
 layer = 4
 script = ExtResource("1_hud")
@@ -23,15 +30,17 @@ script = ExtResource("1_hud")
 anchors_preset = 0
 offset_left = 16.0
 offset_top = 12.0
-offset_right = 340.0
+offset_right = 376.0
 offset_bottom = 116.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_hud")
 
 [node name="MarginContainer" type="MarginContainer" parent="TopLeftPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
 
 [node name="VBoxContainer" type="VBoxContainer" parent="TopLeftPanel/MarginContainer"]
 layout_mode = 2
@@ -45,26 +54,37 @@ theme_override_constants/separation = 16
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
-text = "18:00"
+text = "18:00 / 19:00"
 
 [node name="ScoreLabel" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer/HeaderRow"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(1, 0.86, 0.48, 1)
 text = "Skóre: 0"
 horizontal_alignment = 2
 
 [node name="LevelLabel" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Level 1"
+theme_override_colors/font_color = Color(0.81, 0.86, 0.85, 1)
+text = "Start"
+
+[node name="Divider" type="HSeparator" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
 
 [node name="QuestLabel" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Úkol: Najdi Madrinu Metticulosu s balónky (L2)"
+text = "Vyzvedni balónek u Madriny Metticulosy"
 autowrap_mode = 2
+
+[node name="QuestRoute" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.72, 0.91, 1, 1)
+text = "Náměstí"
 
 [node name="Restart" type="Button" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true

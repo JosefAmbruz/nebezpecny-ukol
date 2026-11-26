@@ -27,7 +27,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func toggle_list() -> void:
 	_list_panel.visible = not _list_panel.visible
-	_hint_label.text = "[Tab] Zavřít seznam" if _list_panel.visible else "[Tab] Seznam assassinů"
+	_hint_label.text = "[Tab] Zavřít portréty" if _list_panel.visible else "[Tab] Portréty assassinů"
 	list_visibility_changed.emit(_list_panel.visible)
 
 
@@ -67,4 +67,4 @@ func _update_count() -> void:
 	for data in _assassins:
 		if data.is_alive:
 			alive_count += 1
-	_count_label.text = "%d / %d" % [alive_count, _assassins.size()]
+	_count_label.text = "%d naživu" % alive_count

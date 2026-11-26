@@ -1,13 +1,19 @@
 class_name GameHud
 extends CanvasLayer
 
+const DISTRICTS := ["Start", "Náměstí", "Park"]
+
 @onready var _clock_label: Label = %ClockLabel
 @onready var _score_label: Label = %ScoreLabel
 @onready var _level_label: Label = %LevelLabel
 @onready var _quest_label: Label = %QuestLabel
+@onready var _quest_route: Label = %QuestRoute
 @onready var _end_game_panel: Control = %EndGamePanel
 @onready var _end_title_label: Label = %EndTitleLabel
 @onready var _end_summary_label: Label = %EndSummaryLabel
+
+var _current_level_id: int = -1
+var _quest_level_id: int = 1
 
 
 func _ready() -> void:
@@ -23,15 +29,17 @@ func set_clock_progress(progress: float) -> void:
 	var total_minutes := int(floor(clamped * 60.0))
 	var hours := 18 + int(total_minutes / 60)
 	var minutes := total_minutes % 60
-	_clock_label.text = "%02d:%02d" % [hours, minutes]
+	_clock_label.text = "%02d:%02d / 19:00" % [hours, minutes]
 
 
 func set_score(score: int) -> void:
 	_score_label.text = "Skóre: %d" % score
 
 
-func set_level_name(level_name: String) -> void:
+func set_level(level_name: String, level_id: int) -> void:
 	_level_label.text = level_name
+	_current_level_id = level_id
+	_update_quest_route()
 
 
 func enable_restart() -> void:
@@ -40,13 +48,32 @@ func enable_restart() -> void:
 
 func set_quest_state(has_balloon: bool, has_battery: bool, completed: bool) -> void:
 	if completed:
-		_quest_label.text = "Úkol: Odevzdáno Padrinovi (+bonus)"
+		_quest_label.text = "Úkol splněn | Bonus připsán"
+		_quest_level_id = -1
 	elif has_balloon and has_battery:
-		_quest_label.text = "Úkol: Balónek + AAA baterka → vrať se k Padrinovi (L1)"
+		_quest_label.text = "Odnes balónek a baterii Padrinu Pacatovi"
+		_quest_level_id = 0
 	elif has_balloon:
-		_quest_label.text = "Úkol: Máš balónek → najdi Padrina Morettiho (L3)"
+		_quest_label.text = "Vyzvedni baterii u Padrina Morettiho"
+		_quest_level_id = 2
 	else:
-		_quest_label.text = "Úkol: Najdi Madrinu Metticulosu s balónky (L2)"
+		_quest_label.text = "Vyzvedni balónek u Madriny Metticulosy"
+		_quest_level_id = 1
+	_update_quest_route()
+
+
+func _update_quest_route() -> void:
+	_quest_route.visible = _quest_level_id >= 0
+	if not _quest_route.visible:
+		return
+	var destination: String = DISTRICTS[_quest_level_id]
+	if _current_level_id < 0:
+		_quest_route.text = destination
+	elif _quest_level_id == _current_level_id:
+		_quest_route.text = "%s | Jsi na místě" % destination
+	else:
+		var direction := "doprava" if _quest_level_id > _current_level_id else "doleva"
+		_quest_route.text = "%s | Jdi %s" % [destination, direction]
 
 
 func show_end_screen(title: String, summary: String, leaderboard: String) -> void:

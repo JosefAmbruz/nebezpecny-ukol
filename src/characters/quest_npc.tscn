@@ -25,6 +25,13 @@ balloon_bunch = NodePath("BalloonBunch")
 
 [node name="CharacterVisuals" parent="." instance=ExtResource("2_vis")]
 
+[node name="NameMarker" type="Label3D" parent="."]
+position = Vector3(0, 1.95, 0.45)
+pixel_size = 0.008
+modulate = Color(0.72, 0.91, 1, 1)
+font_size = 26
+outline_size = 8
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.97, 0)
 shape = SubResource("CapsuleShape3D_body")

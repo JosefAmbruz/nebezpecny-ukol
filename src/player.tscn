@@ -26,6 +26,14 @@ safe_detector = NodePath("SafeDetector")
 [node name="CharacterVisuals" parent="." unique_id=604539014 instance=ExtResource("2_gmfve")]
 appearance = SubResource("Resource_pg28d")
 
+[node name="PlayerMarker" type="Label3D" parent="."]
+position = Vector3(0, 1.95, 0.45)
+pixel_size = 0.008
+modulate = Color(1, 0.86, 0.48, 1)
+text = "Ty"
+font_size = 32
+outline_size = 9
+
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1333279905]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9704045, 0)
 shape = SubResource("CapsuleShape3D_kakee")
