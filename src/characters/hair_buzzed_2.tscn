@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://nyvn033i21r0"]
+
+[ext_resource type="PackedScene" uid="uid://d4cxguywji0vi" path="res://assets/hair/Hair_Buzzed.gltf" id="1_ykr1g"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_0axh6"]
+cull_mode = 1
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 1)
+grow = true
+grow_amount = 0.005
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_fm8cc"]
+next_pass = SubResource("StandardMaterial3D_0axh6")
+shading_mode = 0
+albedo_color = Color(0.6313726, 0.49803922, 0.41960785, 1)
+
+[node name="Hair_Buzzed2" unique_id=639152703 instance=ExtResource("1_ykr1g")]
+transform = Transform3D(5, 0, 0, 0, 5, 0, 0, 0, 5, 0, -0.012392312, 0)
+
+[node name="Hair_Buzzed" parent="." index="0" unique_id=1215970501]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1.650743, 0)
+material_override = SubResource("StandardMaterial3D_fm8cc")

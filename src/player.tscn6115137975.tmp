@@ -1,0 +1,34 @@
+[gd_scene format=3 uid="uid://cslhaif871y5v"]
+
+[ext_resource type="Script" uid="uid://xcj5h4owucuu" path="res://src/player.gd" id="1_gmfve"]
+[ext_resource type="Script" uid="uid://bmonou5unw40" path="res://src/characters/character_appearance.gd" id="2_ehvfd"]
+[ext_resource type="PackedScene" uid="uid://c7qxmfn0njj55" path="res://src/characters/character_visuals.tscn" id="2_gmfve"]
+
+[sub_resource type="Resource" id="Resource_gmfve"]
+script = ExtResource("2_ehvfd")
+metadata/_custom_type_script = "uid://bmonou5unw40"
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kakee"]
+radius = 0.28076172
+height = 1.9428711
+
+[node name="Player" type="CharacterBody3D" unique_id=1465987505 node_paths=PackedStringArray("visuals")]
+script = ExtResource("1_gmfve")
+visuals = NodePath("CharacterVisuals")
+default_appearance = SubResource("Resource_gmfve")
+
+[node name="CharacterVisuals" parent="." unique_id=604539014 instance=ExtResource("2_gmfve")]
+head_turn_speed = null
+max_head_yaw = null
+max_head_pitch = null
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1333279905]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9704045, 0)
+shape = SubResource("CapsuleShape3D_kakee")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1730743501]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.878962, 9.046854)
+projection = 1
+current = true
+fov = 85.93496
+size = 6.772382

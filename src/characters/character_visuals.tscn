@@ -1,0 +1,57 @@
+[gd_scene format=3 uid="uid://c7qxmfn0njj55"]
+
+[ext_resource type="Script" uid="uid://cbwyj1x7mnse1" path="res://src/characters/character_visuals.gd" id="1_4phqr"]
+[ext_resource type="Texture2D" uid="uid://jaeo84qhm47n" path="res://assets/body/body-placeholder.png" id="1_g4g0v"]
+[ext_resource type="Texture2D" uid="uid://dxplvvx7wm2pb" path="res://assets/faces/face1.png" id="2_4phqr"]
+[ext_resource type="Script" uid="uid://bmonou5unw40" path="res://src/characters/character_appearance.gd" id="3_0axh6"]
+[ext_resource type="Texture2D" uid="uid://c6nb56yf7ot2n" path="res://assets/ears/ear1.png" id="5_4drbo"]
+
+[sub_resource type="Resource" id="Resource_4phqr"]
+script = ExtResource("3_0axh6")
+skin_color = Color(0.18995202, 0.45757437, 0.41507116, 1)
+metadata/_custom_type_script = "uid://bmonou5unw40"
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bq6vk"]
+cull_mode = 1
+shading_mode = 0
+albedo_color = Color(0, 0, 0, 1)
+grow = true
+grow_amount = 0.05
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_13ep7"]
+next_pass = SubResource("StandardMaterial3D_bq6vk")
+shading_mode = 0
+albedo_texture = ExtResource("2_4phqr")
+uv1_scale = Vector3(2.2, 2.2, 1)
+uv1_offset = Vector3(-0.58, -0.645, 0)
+texture_repeat = false
+
+[sub_resource type="SphereMesh" id="SphereMesh_kakee"]
+
+[node name="CharacterVisuals" type="Node3D" unique_id=604539014]
+script = ExtResource("1_4phqr")
+appearance = SubResource("Resource_4phqr")
+
+[node name="BodySprite" type="Sprite3D" parent="." unique_id=852741146]
+transform = Transform3D(0.92990685, 0, 0, 0, 1, 0, 0, 0, 1, -0.02087009, 1.16375, -0.12766021)
+texture = ExtResource("1_g4g0v")
+
+[node name="HeadPivot" type="Marker3D" parent="." unique_id=54102647]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6932368, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="HeadPivot" unique_id=1965312157]
+transform = Transform3D(-0.938746, 0, -8.742277e-08, 0, 1.0165547, 0, 8.2067785e-08, 0, -0.99999994, 0, 0.51489735, 0)
+layers = 2
+material_override = SubResource("StandardMaterial3D_13ep7")
+mesh = SubResource("SphereMesh_kakee")
+
+[node name="EarR" type="Sprite3D" parent="HeadPivot" unique_id=479131079]
+transform = Transform3D(0.36181623, 0, 0, 0, 0.38902172, 0, 0, 0, 1, -0.5531513, 0.46698785, 0.033141136)
+texture = ExtResource("5_4drbo")
+
+[node name="EarR2" type="Sprite3D" parent="HeadPivot" unique_id=815399290]
+transform = Transform3D(0.36181623, 0, 0, 0, 0.38902172, 0, 0, 0, 1, 0.57464916, 0.46698785, 0.06740439)
+flip_h = true
+texture = ExtResource("5_4drbo")
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1040987947]

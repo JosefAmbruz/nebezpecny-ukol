@@ -1,0 +1,50 @@
+[gd_scene format=3 uid="uid://cslhaif871y5v"]
+
+[ext_resource type="Script" uid="uid://xcj5h4owucuu" path="res://src/player.gd" id="1_gmfve"]
+[ext_resource type="Script" uid="uid://bmonou5unw40" path="res://src/characters/character_appearance.gd" id="2_ehvfd"]
+[ext_resource type="PackedScene" uid="uid://c7qxmfn0njj55" path="res://src/characters/character_visuals.tscn" id="2_gmfve"]
+[ext_resource type="Texture2D" uid="uid://dxplvvx7wm2pb" path="res://assets/faces/face1.png" id="3_bktlc"]
+
+[sub_resource type="Resource" id="Resource_pg28d"]
+script = ExtResource("2_ehvfd")
+face_texture = ExtResource("3_bktlc")
+metadata/_custom_type_script = "uid://bmonou5unw40"
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_kakee"]
+radius = 0.28076172
+height = 1.9428711
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_safe"]
+size = Vector3(0.8, 1.8, 1.2)
+
+[node name="Player" type="CharacterBody3D" unique_id=1465987505 node_paths=PackedStringArray("visuals", "safe_detector")]
+collision_layer = 0
+script = ExtResource("1_gmfve")
+visuals = NodePath("CharacterVisuals")
+safe_detector = NodePath("SafeDetector")
+
+[node name="CharacterVisuals" parent="." unique_id=604539014 instance=ExtResource("2_gmfve")]
+appearance = SubResource("Resource_pg28d")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1333279905]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9704045, 0)
+shape = SubResource("CapsuleShape3D_kakee")
+
+[node name="SafeDetector" type="Area3D" parent="." unique_id=1982341201]
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SafeDetector" unique_id=1982341202]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("BoxShape3D_safe")
+
+[node name="BalloonAnchor" type="Marker3D" parent="." unique_id=1982341203]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1730743501]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.878962, 9.046854)
+projection = 1
+current = true
+fov = 85.93496
+size = 6.772382
