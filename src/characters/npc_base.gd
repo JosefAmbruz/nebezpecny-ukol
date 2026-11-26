@@ -349,17 +349,14 @@ func _process_attack(delta: float) -> void:
 	_attack_elapsed += delta
 
 	if _attack_elapsed >= attack_duration:
-		if visuals:
-			visuals.play_attack(_stalk_target)
-		if _stalk_target.has_method(&"on_killed_by_assassin"):
-			_stalk_target.call(&"on_killed_by_assassin", self)
-		elif _stalk_target.has_method(&"on_interaction_completed"):
-			_stalk_target.call(&"on_interaction_completed", self, InteractableNpc.InteractionKind.ASSASSINATE)
-		_stalk_target = null
-		_attack_elapsed = 0.0
-		_attack_cooldown = post_abort_cooldown
-		state = State.WANDER
-		_pick_new_wander_target()
+		var target := _stalk_target
+		_abort_attack()
+		if target is Player:
+			target.defense_requested.emit(self)
+		elif target is NpcBase:
+			if visuals:
+				visuals.play_attack(target)
+			target.on_interaction_completed(self, InteractableNpc.InteractionKind.ASSASSINATE)
 
 
 func _abort_attack() -> void:

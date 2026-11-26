@@ -9,6 +9,7 @@ signal interaction_cancelled
 signal interaction_completed(target: InteractableNpc, kind: InteractableNpc.InteractionKind)
 signal interaction_hint_changed(hint: InteractionHint)
 signal safe_state_changed(is_safe: bool, can_lean: bool)
+signal defense_requested(attacker: Node3D)
 signal killed_by_assassin(attacker: Node3D, death_animation: Tween)
 
 const INTERACTABLE_NPC_MASK: int = 1 << 1 # Layer 2: InteractableNPC

@@ -14,6 +14,7 @@ const DISTRICTS := ["Start", "Náměstí", "Park"]
 
 var _current_level_id: int = -1
 var _quest_level_id: int = 1
+var _defense_feedback: Tween
 
 
 func _ready() -> void:
@@ -76,10 +77,37 @@ func _update_quest_route() -> void:
 		_quest_route.text = "%s | Jdi %s" % [destination, direction]
 
 
+func show_defense_prompt() -> void:
+	if _defense_feedback:
+		_defense_feedback.kill()
+	%DefenseLabel.text = "[F] Odraz útok"
+	set_defense_progress(1.0)
+	$TopLeftPanel.hide()
+	%DefenseTime.show()
+	%DefensePanel.show()
+
+
+func set_defense_progress(progress: float) -> void:
+	%DefenseTime.value = progress
+
+
+func finish_defense_prompt(defended: bool) -> void:
+	if not defended:
+		%DefensePanel.hide()
+		return
+	%DefenseTime.hide()
+	%DefenseLabel.text = "Útok odražen"
+	$TopLeftPanel.show()
+	_defense_feedback = create_tween()
+	_defense_feedback.tween_interval(0.75)
+	_defense_feedback.tween_callback(%DefensePanel.hide)
+
+
 func show_end_screen(title: String, summary: String, leaderboard: String) -> void:
 	_end_title_label.text = title
 	_end_summary_label.text = summary
 	%LeaderboardRows.text = leaderboard
+	%DefensePanel.hide()
 	$TopLeftPanel.hide()
 	_end_game_panel.show()
 	%PlayAgain.grab_focus()

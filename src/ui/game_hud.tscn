@@ -22,6 +22,23 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_defense_panel"]
+bg_color = Color(0.075, 0.105, 0.13, 0.98)
+content_margin_left = 24.0
+content_margin_top = 14.0
+content_margin_right = 24.0
+content_margin_bottom = 14.0
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_defense_track"]
+bg_color = Color(0.25, 0.28, 0.30, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_defense_fill"]
+bg_color = Color(1, 0.86, 0.48, 1)
+
 [node name="GameHud" type="CanvasLayer"]
 layer = 4
 script = ExtResource("1_hud")
@@ -94,6 +111,45 @@ focus_mode = 0
 disabled = true
 shortcut = SubResource("Shortcut_restart")
 text = "Restartovat kolo [F5]"
+
+[node name="DefensePanel" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -152.0
+offset_top = 28.0
+offset_right = 152.0
+offset_bottom = 108.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_defense_panel")
+
+[node name="Content" type="VBoxContainer" parent="DefensePanel"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 9
+
+[node name="DefenseLabel" type="Label" parent="DefensePanel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.91, 0.70, 1)
+theme_override_font_sizes/font_size = 27
+text = "[F] Odraz útok"
+horizontal_alignment = 1
+
+[node name="DefenseTime" type="ProgressBar" parent="DefensePanel/Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2
+theme_override_styles/background = SubResource("StyleBoxFlat_defense_track")
+theme_override_styles/fill = SubResource("StyleBoxFlat_defense_fill")
+max_value = 1.0
+step = 0.0
+value = 1.0
+show_percentage = false
 
 [node name="EndGamePanel" type="ColorRect" parent="."]
 process_mode = 2

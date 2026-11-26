@@ -76,8 +76,34 @@ func _run_test() -> void:
 	killer.position = world._player.position + Vector3(-1.0, 0.0, 0.0)
 	world._player._looking_right = true
 	killer._stalk_target = world._player
+	var killer_depth := killer.visuals.global_position.z
 	killer._process_attack(killer.attack_duration)
 	assert(killer.visuals.get_node("Toothbrush").visible)
+	assert(world._player.is_alive and world._player.movement_locked and not paused)
+	assert(Engine.time_scale < 1.0 and world._game_hud.get_node("%DefensePanel").visible)
+	var match_time := world._elapsed_time
+	await _press_key(KEY_E)
+	if world._camera_zoom_tween.is_running():
+		await world._camera_zoom_tween.finished
+	assert(world._player_camera.size < world._camera_base_size * 0.5)
+	assert(world._defense_deadline_ms != 0 and world._elapsed_time == match_time)
+	await _press_key(KEY_F)
+	await process_frame
+	assert(Engine.time_scale == 1.0 and world._defense_deadline_ms == 0)
+	assert(world._player.is_alive and world._assassin_list_ui.visible)
+	assert(world._game_hud.get_node("%DefenseLabel").text == "Útok odražen")
+	assert(not killer.visuals.get_node("Toothbrush").visible)
+	assert(is_equal_approx(killer.visuals.global_position.z, killer_depth))
+	assert(killer.character_data.kill_score == 100)
+
+	world._player._looking_right = true
+	killer._stalk_target = world._player
+	killer._process_attack(killer.attack_duration)
+	var deadline := world._defense_deadline_ms
+	assert(deadline != 0)
+	while not paused:
+		await process_frame
+	assert(Time.get_ticks_msec() >= deadline and Engine.time_scale == 1.0)
 	assert(paused and not world._player.can_process() and not world._director.can_process())
 	assert(not world._assassin_list_ui.visible)
 	var end_panel := world._game_hud.get_node("%EndGamePanel") as Control
@@ -115,7 +141,7 @@ func _run_test() -> void:
 	world._update_match_clock(world.match_duration_seconds)
 	assert(paused and world._game_hud.get_node("%Leaderboard").is_visible_in_tree())
 	assert(world._game_hud.get_node("%LeaderboardRows").text == "1. %s — 100\n2. Ty — 0" % assassin.display_name)
-	print("Onboarding, interaction hints, quest routing, combat, results, and restarts passed.")
+	print("Onboarding, combat, defense success and timeout, results, and restarts passed.")
 	quit()
 
 

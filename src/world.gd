@@ -1,5 +1,8 @@
 extends Node3D
 
+const DEFENSE_WINDOW_MS := 1500
+const DEFENSE_TIME_SCALE := 0.18
+
 @export var appearance_pool: AppearancePool = preload("res://src/characters/default_appearance_pool.tres")
 @export var total_assassins: int = 8
 @export var quest_assassins: int = 4
@@ -41,6 +44,9 @@ var _elapsed_time: float = 0.0
 var _score: int = 0
 var _quest_completed: bool = false
 var _match_ended: bool = false
+var _defense_attacker: NpcBase
+var _defense_deadline_ms: int = 0
+var _normal_time_scale: float = 1.0
 
 
 func _ready() -> void:
@@ -62,6 +68,7 @@ func _ready() -> void:
 	_director.npc_died.connect(_on_npc_died)
 	_director.quest_npc_interacted.connect(_on_quest_npc_interacted)
 	_director.level_activated.connect(_on_level_activated)
+	_player.defense_requested.connect(_start_defense)
 	_player.killed_by_assassin.connect(_on_player_killed)
 	if _assassin_list_ui:
 		_assassin_list_ui.list_visibility_changed.connect(_on_assassin_list_visibility_changed)
@@ -101,7 +108,7 @@ func _start_match() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if _match_ended:
+	if _match_ended or _defense_deadline_ms != 0:
 		return
 
 	# Omezení pohybu hráče na celkovou šířku 3 levelů
@@ -118,7 +125,74 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if _match_ended:
 		return
+	if _defense_deadline_ms != 0:
+		if not is_instance_valid(_defense_attacker) or _defense_attacker.state == NpcBase.State.DEAD:
+			_finish_defense(true)
+			return
+		var remaining_ms := _defense_deadline_ms - Time.get_ticks_msec()
+		if remaining_ms <= 0:
+			_finish_defense(false)
+		else:
+			_game_hud.set_defense_progress(float(remaining_ms) / DEFENSE_WINDOW_MS)
+		return
 	_update_match_clock(delta)
+
+
+func _input(event: InputEvent) -> void:
+	if _defense_deadline_ms == 0:
+		return
+	get_viewport().set_input_as_handled()
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F:
+		_finish_defense(Time.get_ticks_msec() < _defense_deadline_ms)
+
+
+func _exit_tree() -> void:
+	if _defense_deadline_ms != 0:
+		Engine.time_scale = _normal_time_scale
+
+
+func _start_defense(attacker: NpcBase) -> void:
+	if _match_ended or _defense_deadline_ms != 0:
+		return
+	_defense_attacker = attacker
+	_defense_deadline_ms = Time.get_ticks_msec() + DEFENSE_WINDOW_MS
+	_normal_time_scale = Engine.time_scale
+	Engine.time_scale *= DEFENSE_TIME_SCALE
+	_player.set_movement_locked(true)
+	_assassin_list_ui.hide()
+	$InteractionIndicator.hide()
+	attacker.set_physics_process(false)
+	if attacker.visuals:
+		attacker.visuals.play_attack_windup(_player, _player_camera.global_position.z - 2.0)
+	var focus_x := lerpf(attacker.global_position.x, _player.global_position.x, 0.2)
+	_zoom_camera(_camera_base_size * 0.48, 0.28).parallel().tween_property(
+		_player_camera, "global_position:x", focus_x, 0.28
+	)
+	_game_hud.show_defense_prompt()
+
+
+func _finish_defense(defended: bool) -> void:
+	var attacker := _defense_attacker
+	var attacker_active := is_instance_valid(attacker) and attacker.state != NpcBase.State.DEAD
+	defended = defended or not attacker_active or _player.is_safe_from_attack()
+	_defense_attacker = null
+	_defense_deadline_ms = 0
+	Engine.time_scale = _normal_time_scale
+	_game_hud.finish_defense_prompt(defended)
+	if attacker_active:
+		attacker.set_physics_process(true)
+		if attacker.visuals:
+			if defended:
+				attacker.visuals.cancel_attack_windup()
+			else:
+				attacker.visuals.play_attack(_player)
+
+	if defended:
+		_assassin_list_ui.show()
+		$InteractionIndicator.show()
+		_on_assassin_list_visibility_changed(_is_list_open)
+	else:
+		_player.on_killed_by_assassin(attacker)
 
 
 func _on_assassin_list_visibility_changed(is_open: bool) -> void:
@@ -127,14 +201,19 @@ func _on_assassin_list_visibility_changed(is_open: bool) -> void:
 
 	if not _player_camera:
 		return
+	var target_size := _camera_base_size * list_zoom_factor if is_open else _camera_base_size
+	_zoom_camera(target_size, list_zoom_duration)
+
+
+func _zoom_camera(target_size: float, duration: float) -> Tween:
 	if _camera_zoom_tween and _camera_zoom_tween.is_valid():
 		_camera_zoom_tween.kill()
 
-	var target_size := _camera_base_size * list_zoom_factor if is_open else _camera_base_size
-	_camera_zoom_tween = create_tween()
+	_camera_zoom_tween = create_tween().set_ignore_time_scale(true)
 	_camera_zoom_tween.set_trans(Tween.TRANS_CUBIC)
 	_camera_zoom_tween.set_ease(Tween.EASE_OUT)
-	_camera_zoom_tween.tween_property(_player_camera, "size", target_size, list_zoom_duration)
+	_camera_zoom_tween.tween_property(_player_camera, "size", target_size, duration)
+	return _camera_zoom_tween
 
 
 func _update_camera_clamp(delta: float) -> void:

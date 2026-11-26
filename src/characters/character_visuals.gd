@@ -29,6 +29,7 @@ var _target_yaw: float = 0.0
 var _target_pitch: float = 0.0
 var _facing_right: bool = true
 var _attack_tween: Tween
+var _windup_depth_offset: float = 0.0
 
 func _ready() -> void:
 	# Zajistí, že každá instance postavy má vlastní kopii materiálu hlavy
@@ -86,19 +87,50 @@ func play_state(anim_name: StringName) -> void:
 		anim_player.play(anim_name)
 
 
-func play_attack(target: Node3D) -> void:
+func _ready_to_attack(target: Node3D) -> float:
 	var right := target.global_position.x >= global_position.x
 	set_facing_right(right)
 	var direction := 1.0 if right else -1.0
 	if _attack_tween:
 		_attack_tween.kill()
+	if not _toothbrush.visible:
+		_toothbrush.global_position = global_position + Vector3(direction * 0.28, 0.56, 0.44)
+		_toothbrush.rotation_degrees = Vector3(0.0, 0.0 if right else 180.0, direction * 28.0)
+		_toothbrush.show()
+	return direction
 
+
+func play_attack_windup(target: Node3D, foreground_z: float) -> void:
+	_windup_depth_offset = maxf(0.0, foreground_z - global_position.z)
+	global_position.z += _windup_depth_offset
+	var direction := _ready_to_attack(target)
+	var raised_hand := global_position + Vector3(direction * 0.46, 1.05, 0.58)
+	_attack_tween = create_tween().set_ignore_time_scale(true).set_parallel()
+	_attack_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_attack_tween.tween_property(_toothbrush, "global_position", raised_hand, 0.85)
+	_attack_tween.tween_property(_toothbrush, "rotation_degrees:z", direction * 7.0, 0.85)
+	_attack_tween.tween_property(self, "rotation_degrees:z", direction * 9.0, 0.85)
+
+
+func cancel_attack_windup() -> void:
+	if _attack_tween:
+		_attack_tween.kill()
+	_toothbrush.hide()
+	rotation_degrees.z = 0.0
+	_restore_windup_depth()
+
+
+func _restore_windup_depth() -> void:
+	global_position.z -= _windup_depth_offset
+	_windup_depth_offset = 0.0
+
+
+func play_attack(target: Node3D) -> void:
+	_restore_windup_depth()
+	var direction := _ready_to_attack(target)
 	var hand := global_position + Vector3(direction * 0.28, 0.56, 0.44)
 	var swipe_start := target.global_position + Vector3(direction * -0.48, 0.78, 0.58)
 	var swipe_end := swipe_start + Vector3(direction * 0.52, -0.10, 0.0)
-	_toothbrush.global_position = hand
-	_toothbrush.rotation_degrees = Vector3(0.0, 0.0 if right else 180.0, direction * 28.0)
-	_toothbrush.show()
 
 	_attack_tween = create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	_attack_tween.tween_property(_toothbrush, "global_position", swipe_start, 0.06)
@@ -117,6 +149,7 @@ func play_death(attacker: Node3D) -> Tween:
 	if _attack_tween:
 		_attack_tween.kill()
 	_toothbrush.hide()
+	_restore_windup_depth()
 	anim_player.stop()
 	head_pivot.rotation = Vector3.ZERO
 	set_process(false)
