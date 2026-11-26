@@ -163,6 +163,8 @@ func _spawn_assassins_for_zone(zone: LevelZone) -> void:
 		var npc := NPC_BASE_SCENE.instantiate() as NpcBase
 		npc.level_min_x = zone.min_x + 0.8
 		npc.level_max_x = zone.max_x - 0.8
+		npc.can_flee_left = zone.level_id > 0
+		npc.can_flee_right = zone.level_id < _levels.size() - 1
 		npc.apply_character_data(data)
 
 		var lane_z := _allocate_z_lane()

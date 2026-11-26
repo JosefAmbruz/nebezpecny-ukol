@@ -31,6 +31,8 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 @export var gravity: float = 18.0
 @export var level_min_x: float = -13.0
 @export var level_max_x: float = 13.0
+@export var can_flee_left: bool = true
+@export var can_flee_right: bool = true
 
 @export_group("Wander & Lean")
 @export var idle_time_range: Vector2 = Vector2(1.2, 3.2)
@@ -375,10 +377,17 @@ func _enter_flee() -> void:
 	_attack_elapsed = 0.0
 	state = State.FLEE
 
-	# Vybere nejbližší okraj levelu (napojený level)
-	var dist_left := absf(global_position.x - level_min_x)
-	var dist_right := absf(level_max_x - global_position.x)
-	_flee_exit_side = -1 if dist_left < dist_right else 1
+	# Vybere nejbližší platný okraj levelu, ze kterého vede cesta do sousedního levelu
+	if can_flee_left and can_flee_right:
+		var dist_left := absf(global_position.x - level_min_x)
+		var dist_right := absf(level_max_x - global_position.x)
+		_flee_exit_side = -1 if dist_left < dist_right else 1
+	elif can_flee_right:
+		_flee_exit_side = 1
+	elif can_flee_left:
+		_flee_exit_side = -1
+	else:
+		_flee_exit_side = 1
 
 
 func _process_flee(_delta: float) -> void:
