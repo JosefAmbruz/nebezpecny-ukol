@@ -13,6 +13,8 @@ enum State {
 signal died(npc: NpcBase, killer: Node3D)
 signal fled_level(npc: NpcBase, exit_side: int) # -1 = vlevo, +1 = vpravo
 
+const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
+
 @export var visuals: CharacterVisuals
 @export var interactable: InteractableNpc
 @export var appearance: CharacterAppearance:
@@ -51,8 +53,13 @@ signal fled_level(npc: NpcBase, exit_side: int) # -1 = vlevo, +1 = vpravo
 @export var post_abort_cooldown: float = 4.0
 
 var state: State = State.WANDER
-var has_balloon: bool = false
+var has_balloon: bool = false:
+	set(value):
+		has_balloon = value
+		_sync_balloon_visual()
 var character_data: CharacterData = null
+
+var _balloon_instance: Node3D = null
 
 var _looking_right: bool = true
 var _wander_target_x: float = 0.0
@@ -91,6 +98,21 @@ func _ready() -> void:
 	_reset_glance_timer()
 	_camera_glance_cooldown = randf_range(0.8, camera_glance_interval_range.y)
 	_vertical_look_timer = randf_range(0.5, vertical_look_interval_range.y)
+	_sync_balloon_visual()
+
+
+func _sync_balloon_visual() -> void:
+	if not is_node_ready():
+		return
+	var anchor := get_node_or_null("BalloonAnchor") as Node3D
+	if not anchor:
+		return
+	if has_balloon and not is_instance_valid(_balloon_instance):
+		_balloon_instance = BALLOON_SCENE.instantiate() as Node3D
+		anchor.add_child(_balloon_instance)
+	elif not has_balloon and is_instance_valid(_balloon_instance):
+		_balloon_instance.queue_free()
+		_balloon_instance = null
 
 
 func apply_character_data(data: CharacterData) -> void:

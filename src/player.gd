@@ -9,6 +9,7 @@ signal safe_state_changed(is_safe: bool, can_lean: bool)
 signal killed_by_assassin(attacker: Node3D)
 
 const INTERACTABLE_NPC_MASK: int = 1 << 1 # Layer 2: InteractableNPC
+const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
 
 @export var visuals: CharacterVisuals
 @export var safe_detector: Area3D
@@ -26,9 +27,14 @@ const INTERACTABLE_NPC_MASK: int = 1 << 1 # Layer 2: InteractableNPC
 @export_group("Lean / Safe")
 @export var lean_cooldown: float = 1.5
 
-var has_balloon: bool = false
+var has_balloon: bool = false:
+	set(value):
+		has_balloon = value
+		_sync_balloon_visual()
 var has_battery: bool = false
 var is_alive: bool = true
+
+var _balloon_instance: Node3D = null
 
 var _cursor_world_point: Vector3 = Vector3.ZERO
 var _looking_right: bool = true
@@ -57,6 +63,22 @@ func _ready() -> void:
 	if safe_detector:
 		safe_detector.area_entered.connect(_on_safe_area_entered)
 		safe_detector.area_exited.connect(_on_safe_area_exited)
+
+	_sync_balloon_visual()
+
+
+func _sync_balloon_visual() -> void:
+	if not is_node_ready():
+		return
+	var anchor := get_node_or_null("BalloonAnchor") as Node3D
+	if not anchor:
+		return
+	if has_balloon and not is_instance_valid(_balloon_instance):
+		_balloon_instance = BALLOON_SCENE.instantiate() as Node3D
+		anchor.add_child(_balloon_instance)
+	elif not has_balloon and is_instance_valid(_balloon_instance):
+		_balloon_instance.queue_free()
+		_balloon_instance = null
 
 
 func _physics_process(delta: float) -> void:
