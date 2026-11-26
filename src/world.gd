@@ -13,6 +13,9 @@ extends Node3D
 @export_group("Camera")
 @export var camera_half_width: float = 6.0
 @export var camera_smooth_speed: float = 6.0
+@export var list_zoom_factor: float = 0.65
+@export var list_zoom_duration: float = 0.35
+@export var list_zoom_x_offset: float = 0.9
 
 @onready var _player: Player = $Player
 @onready var _player_camera: Camera3D = $Player/Camera3D
@@ -30,6 +33,9 @@ var _active_zone: LevelZone = null
 var _world_min_x: float = -15.0
 var _world_max_x: float = 75.0
 var _camera_base_offset: Vector3 = Vector3.ZERO
+var _camera_base_size: float = 6.8
+var _camera_zoom_tween: Tween = null
+var _is_list_open: bool = false
 
 var _elapsed_time: float = 0.0
 var _score: int = 0
@@ -49,6 +55,7 @@ func _ready() -> void:
 
 	if _player_camera:
 		_camera_base_offset = _player_camera.position
+		_camera_base_size = _player_camera.size
 		_player_camera.top_level = true
 		_player_camera.global_position = _player.global_position + _camera_base_offset
 
@@ -56,6 +63,8 @@ func _ready() -> void:
 	_director.quest_npc_interacted.connect(_on_quest_npc_interacted)
 	_director.level_activated.connect(_on_level_activated)
 	_player.killed_by_assassin.connect(_on_player_killed)
+	if _assassin_list_ui:
+		_assassin_list_ui.list_visibility_changed.connect(_on_assassin_list_visibility_changed)
 
 	_start_match()
 
@@ -109,17 +118,37 @@ func _process(delta: float) -> void:
 	_update_match_clock(delta)
 
 
+func _on_assassin_list_visibility_changed(is_open: bool) -> void:
+	_is_list_open = is_open
+	_player.set_movement_locked(is_open)
+
+	if not _player_camera:
+		return
+	if _camera_zoom_tween and _camera_zoom_tween.is_valid():
+		_camera_zoom_tween.kill()
+
+	var target_size := _camera_base_size * list_zoom_factor if is_open else _camera_base_size
+	_camera_zoom_tween = create_tween()
+	_camera_zoom_tween.set_trans(Tween.TRANS_CUBIC)
+	_camera_zoom_tween.set_ease(Tween.EASE_OUT)
+	_camera_zoom_tween.tween_property(_player_camera, "size", target_size, list_zoom_duration)
+
+
 func _update_camera_clamp(delta: float) -> void:
 	if not _active_zone or not _player_camera:
 		return
 
-	var min_cam_x := _active_zone.min_x + camera_half_width
-	var max_cam_x := _active_zone.max_x - camera_half_width
-	var target_world_x := (
-		(_active_zone.min_x + _active_zone.max_x) * 0.5
-		if min_cam_x > max_cam_x
-		else clampf(_player.global_position.x, min_cam_x, max_cam_x)
-	)
+	var target_world_x: float
+	if _is_list_open:
+		target_world_x = _player.global_position.x + list_zoom_x_offset
+	else:
+		var min_cam_x := _active_zone.min_x + camera_half_width
+		var max_cam_x := _active_zone.max_x - camera_half_width
+		target_world_x = (
+			(_active_zone.min_x + _active_zone.max_x) * 0.5
+			if min_cam_x > max_cam_x
+			else clampf(_player.global_position.x, min_cam_x, max_cam_x)
+		)
 
 	var weight := 1.0 - exp(-camera_smooth_speed * delta)
 	var pos := _player_camera.global_position

@@ -1,6 +1,8 @@
 class_name AssassinListUI
 extends CanvasLayer
 
+signal list_visibility_changed(is_open: bool)
+
 const ENTRY_SCENE: PackedScene = preload("res://src/ui/assassin_list_entry.tscn")
 
 @onready var _list_panel: Control = %ListPanel
@@ -26,6 +28,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func toggle_list() -> void:
 	_list_panel.visible = not _list_panel.visible
 	_hint_label.text = "[Tab] Zavřít seznam" if _list_panel.visible else "[Tab] Seznam assassinů"
+	list_visibility_changed.emit(_list_panel.visible)
 
 
 func set_assassins(assassins: Array[CharacterData]) -> void:

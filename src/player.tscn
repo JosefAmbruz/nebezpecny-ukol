@@ -40,10 +40,10 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
 shape = SubResource("BoxShape3D_safe")
 
 [node name="BalloonAnchor" type="Marker3D" parent="." unique_id=1982341203]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6823592, 0)
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1730743501]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.878962, 9.046854)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.878962, 15.831848)
 projection = 1
 current = true
 fov = 85.93496

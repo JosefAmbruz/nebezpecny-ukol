@@ -33,6 +33,7 @@ var has_balloon: bool = false:
 		_sync_balloon_visual()
 var has_battery: bool = false
 var is_alive: bool = true
+var movement_locked: bool = false
 
 var _balloon_instance: Node3D = null
 
@@ -93,11 +94,23 @@ func _physics_process(delta: float) -> void:
 	_emit_safe_state_if_changed()
 
 
+func set_movement_locked(locked: bool) -> void:
+	movement_locked = locked
+	if locked:
+		_cancel_interaction()
+
+
 func _handle_movement(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 	else:
 		velocity.y = 0.0
+
+	if movement_locked:
+		velocity.x = 0.0
+		velocity.z = 0.0
+		move_and_slide()
+		return
 
 	var input_x := Input.get_axis(&"move_left", &"move_right")
 
@@ -148,6 +161,8 @@ func _update_lean_timers(delta: float) -> void:
 
 
 func _handle_lean_input() -> void:
+	if movement_locked:
+		return
 	if not Input.is_action_just_pressed(&"lean"):
 		return
 
@@ -211,7 +226,7 @@ func is_looking_at(target: Node3D) -> bool:
 
 
 func _handle_interaction(delta: float) -> void:
-	if _is_leaning:
+	if _is_leaning or movement_locked:
 		_cancel_interaction()
 		return
 
