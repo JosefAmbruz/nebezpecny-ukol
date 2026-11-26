@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://duqth0pj6hikb"]
+
+[ext_resource type="Texture2D" uid="uid://ce8nw8pauemqk" path="res://assets/misc/death-marks.png" id="1_jed43"]
+[ext_resource type="Script" uid="uid://bldh7qxqb7ov" path="res://src/world/death_mark.gd" id="2_dmscript"]
+[ext_resource type="Script" uid="uid://irvssc7anbd1" path="res://src/characters/interactable_npc.gd" id="3_int"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_mark"]
+size = Vector3(1, 1.1, 0.8)
+
+[node name="DeathMark" type="Node3D" unique_id=681262381 node_paths=PackedStringArray("sprite", "interactable", "info_label")]
+script = ExtResource("2_dmscript")
+sprite = NodePath("Sprite3D")
+interactable = NodePath("InteractableNpc")
+info_label = NodePath("InfoLabel")
+
+[node name="Sprite3D" type="Sprite3D" parent="." unique_id=1719482120]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5250466, 0)
+texture = ExtResource("1_jed43")
+hframes = 6
+region_rect = Rect2(0, 0, 115.5, 148)
+
+[node name="InteractableNpc" type="Area3D" parent="." unique_id=2133381195 node_paths=PackedStringArray("character_root")]
+collision_layer = 2
+collision_mask = 0
+monitoring = false
+script = ExtResource("3_int")
+interaction_kind = 1
+interaction_duration = 0.5
+character_root = NodePath("..")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractableNpc" unique_id=2095874188]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("BoxShape3D_mark")
+
+[node name="InfoLabel" type="Label3D" parent="." unique_id=38991032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0.2)
+visible = false
+billboard = 1
+no_depth_test = true
+modulate = Color(1, 0.96, 0.85, 1)
+text = "Zde zemřel:"
+font_size = 36
+outline_size = 10

@@ -7,6 +7,7 @@ signal level_activated(zone: LevelZone)
 
 const NPC_BASE_SCENE: PackedScene = preload("res://src/characters/npc_base.tscn")
 const QUEST_NPC_SCENE: PackedScene = preload("res://src/characters/quest_npc.tscn")
+const DEATH_MARK_SCENE: PackedScene = preload("res://src/world/death_mark.tscn")
 
 @export var tick_interval: float = 5.0
 @export var freeze_ramp_seconds: float = 25.0
@@ -29,6 +30,8 @@ var _assassin_records: Array[Dictionary] = []
 var _active_civilians: Array[NpcBase] = []
 var _active_quest_npc: QuestNpc = null
 var _quest_npc_x_by_level: Dictionary = {} # level_id -> float
+var _death_mark_records: Array[Dictionary] = []
+var _active_death_marks: Array[DeathMark] = []
 
 var _available_z_lanes: Array[float] = []
 var _overflow_lane_index: int = 0
@@ -100,6 +103,7 @@ func activate_level(new_level_id: int) -> void:
 	_spawn_quest_npc_for_zone(zone)
 	_spawn_assassins_for_zone(zone)
 	_spawn_civilians_for_zone(zone)
+	_spawn_death_marks_for_zone(zone)
 
 	level_activated.emit(zone)
 
@@ -133,6 +137,11 @@ func _despawn_active_level() -> void:
 			_quest_npc_x_by_level[active_level_id] = _active_quest_npc.global_position.x
 		_active_quest_npc.queue_free()
 	_active_quest_npc = null
+
+	for mark in _active_death_marks:
+		if is_instance_valid(mark):
+			mark.queue_free()
+	_active_death_marks.clear()
 
 
 func _spawn_quest_npc_for_zone(zone: LevelZone) -> void:
@@ -287,6 +296,38 @@ func _on_assassin_fled(npc: NpcBase, exit_side: int) -> void:
 			break
 
 
+func spawn_death_mark(world_pos: Vector3, victim_name: String, was_assassin: bool) -> void:
+	if not _spawn_parent:
+		return
+	var zone := _get_zone(active_level_id)
+	var floor_y := zone.floor_y if zone else world_pos.y
+	var record := {
+		"level_id": active_level_id,
+		"x_pos": world_pos.x,
+		"y_pos": floor_y,
+		"z_pos": world_pos.z,
+		"frame": randi_range(0, 5),
+		"victim_name": victim_name,
+		"was_assassin": was_assassin,
+	}
+	_death_mark_records.append(record)
+	_instantiate_death_mark(record)
+
+
+func _spawn_death_marks_for_zone(zone: LevelZone) -> void:
+	for record in _death_mark_records:
+		if record["level_id"] == zone.level_id:
+			_instantiate_death_mark(record)
+
+
+func _instantiate_death_mark(record: Dictionary) -> void:
+	var mark := DEATH_MARK_SCENE.instantiate() as DeathMark
+	mark.setup(record["victim_name"], record["was_assassin"], record["frame"])
+	_spawn_parent.add_child(mark)
+	mark.global_position = Vector3(record["x_pos"], record["y_pos"], record["z_pos"])
+	_active_death_marks.append(mark)
+
+
 func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 	if npc.character_data:
 		npc.character_data.is_alive = false
@@ -294,6 +335,9 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 			if rec["data"] == npc.character_data:
 				rec["node"] = null
 				break
+
+	var victim_name := npc.character_data.display_name if npc.character_data else npc.display_name
+	spawn_death_mark(npc.global_position, victim_name, npc.is_assassin)
 	npc_died.emit(npc, killer)
 
 
