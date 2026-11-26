@@ -11,11 +11,15 @@ height = 1.94
 [sub_resource type="BoxShape3D" id="BoxShape3D_hitbox"]
 size = Vector3(0.95, 2.05, 0.8)
 
-[node name="NpcBase" type="CharacterBody3D" node_paths=PackedStringArray("visuals", "interactable")]
+[sub_resource type="BoxShape3D" id="BoxShape3D_safe"]
+size = Vector3(0.8, 1.8, 1.2)
+
+[node name="NpcBase" type="CharacterBody3D" node_paths=PackedStringArray("visuals", "interactable", "safe_detector")]
 collision_layer = 0
 script = ExtResource("1_npc")
 visuals = NodePath("CharacterVisuals")
 interactable = NodePath("InteractableNpc")
+safe_detector = NodePath("SafeDetector")
 
 [node name="CharacterVisuals" parent="." instance=ExtResource("2_vis")]
 
@@ -36,3 +40,17 @@ shape = SubResource("BoxShape3D_hitbox")
 
 [node name="BalloonAnchor" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.35, 0)
+
+[node name="SafeDetector" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 4
+monitorable = false
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SafeDetector"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+shape = SubResource("BoxShape3D_safe")
+
+[node name="VoicePlayer" type="AudioStreamPlayer3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
+bus = &"Voice"
+max_distance = 18.0

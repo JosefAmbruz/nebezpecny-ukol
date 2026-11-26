@@ -35,6 +35,8 @@ const WALK_FOOT_POSES := [
 @onready var ear_r: Sprite3D = $HeadPivot/EarR
 @onready var ear_l: Sprite3D = $HeadPivot/EarR2
 @onready var body_rig: Node3D = $BodyRig
+@onready var headwear_anchor: Marker3D = $HeadPivot/HeadwearAnchor
+@onready var balloon_anchor: Marker3D = $BodyRig/BalloonAnchor
 @onready var anim_player: AnimationPlayer = $AnimationPlayer
 @onready var _toothbrush: Node3D = $Toothbrush
 @onready var _brush_handle: MeshInstance3D = $Toothbrush/Handle
@@ -162,6 +164,18 @@ func _apply_appearance() -> void:
 	if ear_l:
 		ear_l.modulate = appearance.skin_color
 
+	set_headwear(appearance.headwear_scene)
+
+
+func set_headwear(scene: PackedScene) -> void:
+	if not headwear_anchor:
+		return
+	for child in headwear_anchor.get_children():
+		child.queue_free()
+	if scene:
+		var inst := scene.instantiate()
+		headwear_anchor.add_child(inst)
+
 ## Natočí hlavu směrem ke světové pozici (např. kurzor, hráč, podezřelý zvuk)
 func look_at_world_point(world_point: Vector3) -> void:
 	var local_dir := to_local(world_point) - head_pivot.position
@@ -178,12 +192,17 @@ func look_forward() -> void:
 	_target_yaw = 0.0
 	_target_pitch = 0.0
 
-## Nastaví směr těla (pro 2D sidescroller vlevo/vpravo)
+## Nastaví směr těla (pro 2D sidescroller vlevo/vpravo) překlopením BodyPivotu včetně BalloonAnchoru
 func set_facing_right(right: bool) -> void:
 	if _facing_right == right:
 		return
 	_facing_right = right
 	_torso.flip_h = not right
+	balloon_anchor.position.x = absf(balloon_anchor.position.x) * (1.0 if right else -1.0)
+
+
+func get_balloon_anchor() -> Marker3D:
+	return balloon_anchor
 
 func play_state(anim_name: StringName, speed: float = 0.0) -> void:
 	_move_speed = absf(speed)

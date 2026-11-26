@@ -24,6 +24,14 @@ const DEFENSE_TIME_SCALE := 0.18
 @export var assassinate_focus_y_offset: float = 1.2
 @export var assassinate_zoom_return_duration: float = 0.32
 
+@export_group("Audio (Hudba & SFX)")
+@export var background_music: AudioStream
+@export var sfx_assassin_tag: AudioStream
+@export var sfx_brush_break: AudioStream
+@export var sfx_quest_progress: AudioStream
+@export var sfx_list_toggle: AudioStream
+@export var sfx_player_killed: AudioStream
+
 @onready var _player: Player = $Player
 @onready var _player_camera: Camera3D = $Player/Camera3D
 @onready var _director: OffScreenDirector = $OffScreenDirector
@@ -122,6 +130,9 @@ func _start_match() -> void:
 	_game_hud.enable_restart()
 	set_process(true)
 
+	if background_music and (not _active_zone or not _active_zone.music_override):
+		AudioManager.play_music(background_music)
+
 
 func _physics_process(delta: float) -> void:
 	if _match_ended or _defense_deadline_ms != 0:
@@ -216,6 +227,7 @@ func _finish_defense(defended: bool) -> void:
 func _on_assassin_list_visibility_changed(is_open: bool) -> void:
 	_is_list_open = is_open
 	_player.set_movement_locked(is_open)
+	AudioManager.play_sfx(sfx_list_toggle)
 
 	if not _player_camera:
 		return
@@ -325,6 +337,12 @@ func _on_level_activated(zone: LevelZone) -> void:
 	_active_zone = zone
 	if _game_hud:
 		_game_hud.set_level(zone.level_name, zone.level_id)
+	AudioManager.play_ambient(zone.ambient_stream)
+	AudioManager.set_ambient_oneshots(zone.ambient_oneshots)
+	if zone.music_override:
+		AudioManager.play_music(zone.music_override)
+	elif background_music:
+		AudioManager.play_music(background_music)
 
 
 func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
@@ -333,6 +351,7 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 
 	var points := score_assassin_kill if npc.is_assassin else score_civilian_penalty
 	if killer == _player:
+		AudioManager.play_sfx(sfx_assassin_tag if npc.is_assassin else sfx_brush_break)
 		_add_score(points)
 		if npc.visuals:
 			npc.visuals.show_score_popup(points)
@@ -355,14 +374,17 @@ func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role
 		QuestNpc.Role.MADRINA_METTICULOSA:
 			if not _player.has_balloon:
 				_player.has_balloon = true
+				AudioManager.play_sfx(sfx_quest_progress)
 		QuestNpc.Role.PADRINO_MORETTI:
 			if _player.has_balloon and not _player.has_battery:
 				_player.has_battery = true
+				AudioManager.play_sfx(sfx_quest_progress)
 		QuestNpc.Role.PADRINO_PACATO:
 			if _player.has_balloon and _player.has_battery and not _quest_completed:
 				_quest_completed = true
 				_player.has_balloon = false
 				_player.has_battery = false
+				AudioManager.play_sfx(sfx_quest_progress)
 				_add_score(score_quest_bonus)
 
 	if _game_hud:
@@ -370,6 +392,7 @@ func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role
 
 
 func _on_player_killed(attacker: Node3D, death_animation: Tween) -> void:
+	AudioManager.play_sfx(sfx_player_killed)
 	_director.spawn_death_mark(_player.global_position, "Ty (Hráč)", true)
 
 	var killer_name := "neznámý assassin"

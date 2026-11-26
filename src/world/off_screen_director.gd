@@ -149,6 +149,8 @@ func _spawn_quest_npc_for_zone(zone: LevelZone) -> void:
 	qnpc.role = zone.quest_npc_role
 	if zone.quest_npc_appearance:
 		qnpc.appearance = zone.quest_npc_appearance
+	if zone.quest_npc_voice:
+		qnpc.voice_on_interact = zone.quest_npc_voice
 
 	qnpc.level_min_x = zone.min_x + 1.0
 	qnpc.level_max_x = zone.max_x - 1.0

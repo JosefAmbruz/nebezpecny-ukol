@@ -150,6 +150,9 @@ position = Vector3(0.13, 0.025, 0)
 rotation = Vector3(0, 0, -1.5707963)
 mesh = SubResource("Mesh_foot")
 
+[node name="BalloonAnchor" type="Marker3D" parent="BodyRig" unique_id=2047666363]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.44141692, 0.54948056, -0.6943695)
+
 [node name="HeadPivot" type="Marker3D" parent="." unique_id=54102647]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72800577, 0)
 
@@ -167,6 +170,9 @@ texture = ExtResource("5_4drbo")
 transform = Transform3D(0.3316418, 0, 0.39979857, 0, 0.38902172, 0, -0.14465359, 0, 0.916603, 0.5443757, 0.46698785, 0.06740439)
 flip_h = true
 texture = ExtResource("5_4drbo")
+
+[node name="HeadwearAnchor" type="Marker3D" parent="HeadPivot"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7815, 0)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1040987947]
 

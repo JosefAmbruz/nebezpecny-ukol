@@ -15,6 +15,12 @@ extends Node3D
 @export_group("Quest NPC")
 @export var quest_npc_role: QuestNpc.Role = QuestNpc.Role.PADRINO_PACATO
 @export var quest_npc_appearance: CharacterAppearance
+@export var quest_npc_voice: AudioStream
+
+@export_group("Audio (Brno Ambient & Hudba)")
+@export var ambient_stream: AudioStream
+@export var ambient_oneshots: AudioStream
+@export var music_override: AudioStream
 
 @export_group("Editor Preview")
 @export var preview_color: Color = Color(0.25, 0.85, 0.55, 1.0)
