@@ -168,8 +168,8 @@ func _spawn_assassins_for_zone(zone: LevelZone) -> void:
 		npc.apply_character_data(data)
 
 		var lane_z := _allocate_z_lane()
+		npc.position = _spawn_parent.to_local(Vector3(rec["x_pos"], zone.floor_y, lane_z))
 		_spawn_parent.add_child(npc)
-		npc.global_position = Vector3(rec["x_pos"], zone.floor_y, lane_z)
 		npc.died.connect(_on_npc_died)
 		npc.fled_level.connect(_on_assassin_fled)
 		rec["node"] = npc
@@ -185,8 +185,8 @@ func _spawn_civilians_for_zone(zone: LevelZone) -> void:
 		civ.appearance = CharacterGenerator.generate_civilian_appearance(_pool, _reserved_signatures)
 
 		var lane_z := _allocate_z_lane()
+		civ.position = _spawn_parent.to_local(Vector3(zone.get_random_x(), zone.floor_y, lane_z))
 		_spawn_parent.add_child(civ)
-		civ.global_position = Vector3(zone.get_random_x(), zone.floor_y, lane_z)
 		civ.died.connect(_on_npc_died)
 		_active_civilians.append(civ)
 

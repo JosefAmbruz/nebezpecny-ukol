@@ -6,6 +6,7 @@ enum State {
 	LEAN,
 	STALK,
 	ATTACK,
+	EVADE,
 	FLEE,
 	DEAD,
 }
@@ -14,6 +15,8 @@ signal died(npc: NpcBase, killer: Node3D)
 signal fled_level(npc: NpcBase, exit_side: int) # -1 = vlevo, +1 = vpravo
 
 const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
+const WITNESS_RANGE := 6.0
+const STALK_TIME_LIMIT := 8.0
 
 @export var visuals: CharacterVisuals
 @export var interactable: InteractableNpc
@@ -65,6 +68,7 @@ var _balloon_instance: Node3D = null
 
 var _looking_right: bool = true
 var _wander_target_x: float = 0.0
+var _wander_speed_factor: float = 1.0
 var _idle_timer: float = 0.0
 var _glance_timer: float = 0.0
 
@@ -79,8 +83,11 @@ var _lean_timer: float = 0.0
 
 var _stalk_target: Node3D = null
 var _stalk_pause_timer: float = 0.0
+var _stalk_time_left: float = 0.0
 var _attack_elapsed: float = 0.0
 var _attack_cooldown: float = 0.0
+var _evade_timer: float = 0.0
+var _evade_target_x: float = 0.0
 var _flee_exit_side: int = 1
 
 
@@ -155,13 +162,21 @@ func _physics_process(delta: float) -> void:
 			_process_stalk(delta)
 		State.ATTACK:
 			_process_attack(delta)
+		State.EVADE:
+			_process_evade(delta)
 		State.FLEE:
 			_process_flee(delta)
 
 	velocity.z = 0.0
 	move_and_slide()
+	global_position.x = clampf(global_position.x, level_min_x, level_max_x)
 	_update_head_look_variety(delta)
 	_update_visuals()
+
+
+func _exit_tree() -> void:
+	if _is_leaning:
+		_exit_lean()
 
 
 #region Wander & Lean
@@ -176,7 +191,7 @@ func _process_wander(delta: float) -> void:
 			else:
 				_target_safe_object = null
 		else:
-			_move_horizontally(signf(dist_to_safe), walk_speed)
+			_move_horizontally(signf(dist_to_safe), walk_speed * _wander_speed_factor)
 			return
 
 	if _idle_timer > 0.0:
@@ -196,7 +211,7 @@ func _process_wander(delta: float) -> void:
 		_idle_timer = randf_range(idle_time_range.x, idle_time_range.y)
 		_reset_glance_timer()
 	else:
-		_move_horizontally(signf(dist), walk_speed)
+		_move_horizontally(signf(dist), walk_speed * _wander_speed_factor)
 
 
 func _enter_lean(safe_obj: SafeObject) -> void:
@@ -226,10 +241,14 @@ func _exit_lean() -> void:
 
 
 func _pick_new_wander_target() -> void:
-	var offset := randf_range(-6.0, 6.0)
-	if absf(offset) < 1.5:
-		offset = 2.5 if randf() > 0.5 else -2.5
-	_wander_target_x = clampf(global_position.x + offset, level_min_x, level_max_x)
+	var x := global_position.x
+	var direction := 1.0 if randf() < 0.5 else -1.0
+	if x - level_min_x < 1.5:
+		direction = 1.0
+	elif level_max_x - x < 1.5:
+		direction = -1.0
+	_wander_target_x = clampf(x + direction * randf_range(2.5, 7.0), level_min_x, level_max_x)
+	_wander_speed_factor = randf_range(0.72, 1.15)
 
 
 func _find_nearby_safe_object() -> SafeObject:
@@ -260,54 +279,64 @@ func _reset_glance_timer() -> void:
 
 #region Assassin AI (Stalk, Attack, Flee)
 
-func alert_to_stalk(target: Node3D) -> void:
-	if not is_assassin or state in [State.DEAD, State.FLEE, State.ATTACK]:
-		return
-	if _is_leaning:
-		_exit_lean()
+func alert_to_stalk(target: Node3D) -> bool:
+	if not is_assassin or state in [State.DEAD, State.FLEE, State.ATTACK] or _attack_cooldown > 0.0:
+		return false
+	if not _is_valid_attack_target(target) or _target_is_safe(target):
+		return false
+	_exit_lean()
 	_stalk_target = target
 	_stalk_pause_timer = 0.0
+	_stalk_time_left = STALK_TIME_LIMIT
 	state = State.STALK
+	return true
 
 
 func _try_acquire_stalk_target(delta: float) -> void:
-	if _attack_cooldown > 0.0:
+	if _attack_cooldown > 0.0 or detect_range <= 0.0:
 		return
 
-	var potential_targets: Array[Node3D] = []
-	for node in get_tree().get_nodes_in_group(&"player"):
-		if node is Node3D and _is_valid_attack_target(node):
-			potential_targets.append(node)
-	for node in get_tree().get_nodes_in_group(&"assassins"):
-		if node != self and node is Node3D and _is_valid_attack_target(node):
-			potential_targets.append(node)
-
-	for target in potential_targets:
-		var dist := absf(target.global_position.x - global_position.x)
-		if dist > detect_range:
-			continue
-		var chance := stalk_trigger_chance_per_sec * delta
-		if target.get(&"has_balloon") == true:
-			chance *= balloon_detect_multiplier
-		if randf() < chance:
-			_stalk_target = target
-			_stalk_pause_timer = 0.0
-			state = State.STALK
-			return
+	var best_target: Node3D
+	var best_rate := 0.0
+	for group in [&"player", &"assassins"]:
+		for node in get_tree().get_nodes_in_group(group):
+			var target := node as Node3D
+			if target == self or not _is_valid_attack_target(target):
+				continue
+			var distance := absf(target.global_position.x - global_position.x)
+			if distance > detect_range or _target_is_safe(target):
+				continue
+			var rate := stalk_trigger_chance_per_sec * lerpf(1.0, 0.4, distance / detect_range)
+			if target.get(&"has_balloon") == true:
+				rate *= balloon_detect_multiplier
+			if rate > best_rate:
+				best_target = target
+				best_rate = rate
+	if best_target and randf() < 1.0 - exp(-best_rate * delta):
+		alert_to_stalk(best_target)
 
 
 func _process_stalk(delta: float) -> void:
 	if not _is_valid_attack_target(_stalk_target):
-		_stalk_target = null
-		state = State.WANDER
-		_pick_new_wander_target()
+		_abort_attack()
 		return
 
 	var dist_x := _stalk_target.global_position.x - global_position.x
 	var abs_dist := absf(dist_x)
+	_stalk_time_left -= delta
+	if _stalk_time_left <= 0.0 or abs_dist > detect_range * 1.6 or _target_is_safe(_stalk_target):
+		_abort_attack()
+		return
 
-	# Pokud je blízko, cíl není v bezpečí a nedívá se na nás -> zahájíme nenápadný útok kartáčkem
-	if abs_dist <= attack_range and not _target_is_safe(_stalk_target) and not _target_is_looking_at_me(_stalk_target):
+	if _target_is_looking_at_me(_stalk_target):
+		velocity.x = 0.0
+		_looking_right = dist_x < 0.0
+		if abs_dist < attack_range * 0.8:
+			_move_horizontally(1.0 if _looking_right else -1.0, walk_speed * 0.55)
+		return
+
+	if abs_dist <= attack_range:
+		velocity.x = 0.0
 		_looking_right = dist_x >= 0.0
 		_attack_elapsed = 0.0
 		state = State.ATTACK
@@ -360,11 +389,35 @@ func _process_attack(delta: float) -> void:
 
 
 func _abort_attack() -> void:
+	velocity.x = 0.0
 	_attack_elapsed = 0.0
 	_stalk_target = null
 	_attack_cooldown = post_abort_cooldown
 	state = State.WANDER
 	_pick_new_wander_target()
+
+
+func _evade_danger(danger_x: float) -> void:
+	if is_assassin or state == State.DEAD:
+		return
+	_exit_lean()
+	state = State.EVADE
+	var direction := 1.0 if global_position.x >= danger_x else -1.0
+	_evade_target_x = clampf(global_position.x + direction * randf_range(3.0, 5.0), level_min_x, level_max_x)
+	_evade_timer = randf_range(1.4, 2.1)
+	_idle_timer = 0.0
+
+
+func _process_evade(delta: float) -> void:
+	_evade_timer -= delta
+	var distance := _evade_target_x - global_position.x
+	if absf(distance) > 0.25 and _evade_timer > 0.0:
+		_move_horizontally(signf(distance), walk_speed * 1.8)
+		return
+	velocity.x = 0.0
+	state = State.WANDER
+	_idle_timer = randf_range(0.6, 1.2)
+	_reset_glance_timer()
 
 
 func _enter_flee() -> void:
@@ -411,12 +464,13 @@ func is_looking_at(target: Node3D) -> bool:
 	return target_is_right == _looking_right
 
 
-func on_caught_assassination_attempt(_attacker: Node3D) -> void:
+func on_caught_assassination_attempt(attacker: Node3D) -> void:
 	if state == State.DEAD:
 		return
 	if is_assassin:
 		_enter_flee()
-	# Civilista po vyplašení chodí normálně dál
+	elif is_instance_valid(attacker):
+		_evade_danger(attacker.global_position.x)
 
 
 func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKind) -> void:
@@ -434,15 +488,23 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 		if visuals:
 			visuals.play_death(actor)
 		died.emit(self, actor)
+		_startle_nearby_civilians()
 		if not is_assassin and actor and actor.is_in_group(&"player"):
 			_alert_nearby_assassins(actor)
 
 
-func _alert_nearby_assassins(player_node: Node3D, max_count: int = 3) -> void:
+func _startle_nearby_civilians() -> void:
+	for node in get_tree().get_nodes_in_group(&"npcs"):
+		var witness := node as NpcBase
+		if witness and not witness.is_queued_for_deletion() and absf(witness.global_position.x - global_position.x) <= WITNESS_RANGE:
+			witness._evade_danger(global_position.x)
+
+
+func _alert_nearby_assassins(player_node: Node3D) -> void:
 	var assassins: Array[NpcBase] = []
 	for node in get_tree().get_nodes_in_group(&"assassins"):
 		var npc := node as NpcBase
-		if npc and npc != self and npc.state != State.DEAD and npc.state != State.FLEE:
+		if npc and not npc.is_queued_for_deletion() and absf(npc.global_position.x - global_position.x) <= WITNESS_RANGE:
 			assassins.append(npc)
 
 	assassins.sort_custom(func(a: NpcBase, b: NpcBase) -> bool:
@@ -451,14 +513,14 @@ func _alert_nearby_assassins(player_node: Node3D, max_count: int = 3) -> void:
 
 	var alerted := 0
 	for npc in assassins:
-		if alerted >= max_count:
-			break
-		npc.alert_to_stalk(player_node)
-		alerted += 1
+		if npc.alert_to_stalk(player_node):
+			alerted += 1
+			if alerted == 2:
+				return
 
 
 func _is_valid_attack_target(target: Variant) -> bool:
-	if not is_instance_valid(target) or not (target is Node3D):
+	if not is_instance_valid(target) or not (target is Node3D) or target.is_queued_for_deletion():
 		return false
 	if target is Player:
 		return target.is_alive
@@ -490,7 +552,7 @@ func _move_horizontally(dir: float, speed: float) -> void:
 
 
 func _update_head_look_variety(delta: float) -> void:
-	if state in [State.ATTACK, State.FLEE, State.DEAD]:
+	if state in [State.ATTACK, State.EVADE, State.FLEE, State.DEAD]:
 		_camera_glance_time_left = 0.0
 		_vertical_look_offset = 0.0
 		return
