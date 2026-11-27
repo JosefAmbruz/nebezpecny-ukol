@@ -32,6 +32,9 @@ func _run_test() -> void:
 
 	player._looking_right = false
 	assassin._process_stalk(0.1)
+	assert(assassin.state == NpcBase.State.STALK and assassin.velocity.x == 0.0 and assassin._looking_right)
+	assassin._process_stalk(0.7)
+	assassin._process_stalk(0.1)
 	assert(assassin.state == NpcBase.State.STALK and assassin.velocity.x < 0.0)
 	player._looking_right = true
 	assassin._process_stalk(0.1)
@@ -52,6 +55,17 @@ func _run_test() -> void:
 	distant_assassin._is_leaning = true
 	assassin._process_stalk(0.1)
 	assert(assassin.state == NpcBase.State.WANDER)
+
+	witness.position.x = 2.0
+	seed(12345)
+	for i in 100:
+		witness._idle_timer = 0.0
+		witness._wander_target_x = witness.position.x
+		witness._looking_right = true
+		witness._process_wander(0.1)
+		if not witness._looking_right:
+			break
+	assert(not witness._looking_right)
 
 	distant_civilian.position.x = distant_civilian.level_max_x
 	distant_civilian._pick_new_wander_target()

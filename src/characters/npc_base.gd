@@ -225,6 +225,10 @@ func _process_wander(delta: float) -> void:
 		velocity.x = 0.0
 		_idle_timer = randf_range(idle_time_range.x, idle_time_range.y)
 		_reset_glance_timer()
+		if not is_assassin and randf() < 0.3:
+			var player := get_tree().get_first_node_in_group(&"player") as Player
+			if is_instance_valid(player) and player.is_alive and absf(player.global_position.x - global_position.x) <= detect_range:
+				_looking_right = player.global_position.x >= global_position.x
 	else:
 		_move_horizontally(signf(dist), walk_speed * _wander_speed_factor)
 
@@ -301,7 +305,7 @@ func alert_to_stalk(target: Node3D) -> bool:
 		return false
 	_exit_lean()
 	_stalk_target = target
-	_stalk_pause_timer = 0.0
+	_stalk_pause_timer = 0.7
 	_stalk_time_left = STALK_TIME_LIMIT
 	state = State.STALK
 	return true
@@ -343,6 +347,12 @@ func _process_stalk(delta: float) -> void:
 		_abort_attack()
 		return
 
+	if _stalk_pause_timer > 0.0:
+		velocity.x = 0.0
+		_looking_right = dist_x >= 0.0
+		_stalk_pause_timer -= delta
+		return
+
 	if _target_is_looking_at_me(_stalk_target):
 		velocity.x = 0.0
 		_looking_right = dist_x < 0.0
@@ -358,11 +368,6 @@ func _process_stalk(delta: float) -> void:
 		return
 
 	# Simuluje nenápadnou chůzi (občas krátce zastaví), ale postupně se přibližuje
-	if _stalk_pause_timer > 0.0:
-		velocity.x = 0.0
-		_stalk_pause_timer -= delta
-		return
-
 	if abs_dist > attack_range * 0.75:
 		_move_horizontally(signf(dist_x), walk_speed * 0.95)
 		if randf() < 0.25 * delta:
