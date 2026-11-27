@@ -195,9 +195,9 @@ func _start_defense(attacker: NpcBase) -> void:
 	if attacker.visuals:
 		attacker.visuals.play_attack_windup(_player, _player_camera.global_position.z - 2.0)
 	var focus_x := lerpf(attacker.global_position.x, _player.global_position.x, 0.2)
-	_zoom_camera(_camera_base_size * 0.48, 0.28).parallel().tween_property(
-		_player_camera, "global_position:x", focus_x, 0.28
-	)
+	var camera_tween := _zoom_camera(_camera_base_size * 0.48, 0.28).set_parallel()
+	camera_tween.tween_property(_player_camera, "global_position:x", focus_x, 0.28)
+	camera_tween.tween_property(_player_camera, "global_position:y", _player.global_position.y + 1.15, 0.28)
 	_game_hud.show_defense_prompt()
 
 

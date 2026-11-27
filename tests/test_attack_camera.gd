@@ -32,6 +32,17 @@ func _ready() -> void:
 	Input.action_release(&"interact")
 	player._handle_interaction(0.1)
 	assert(player._active_target == null)
+	world._start_defense(victim)
+	await world._camera_zoom_tween.finished
+	assert(absf(world._player_camera.global_position.y - player.global_position.y - 1.15) < 0.01)
+	var viewport_size := get_viewport().get_visible_rect().size
+	for point in [player.global_position, player.global_position + Vector3.UP * 2.0, victim.global_position, victim.global_position + Vector3.UP * 2.0]:
+		var screen: Vector2 = world._player_camera.unproject_position(point)
+		assert(screen.x >= 0.0 and screen.x <= viewport_size.x and screen.y >= 0.0 and screen.y <= viewport_size.y)
+	world._finish_defense(true)
+	assert(Engine.time_scale == 1.0 and not player.movement_locked)
+	world._update_camera_clamp(1.0)
+	assert(absf(world._player_camera.global_position.y - player.global_position.y - world._camera_base_offset.y) < 0.02)
 	world.queue_free()
 	await get_tree().process_frame
 	print("Attack zoom preserves the cursor position and active target.")
