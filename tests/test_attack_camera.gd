@@ -41,6 +41,22 @@ func _ready() -> void:
 		assert(screen.x >= 0.0 and screen.x <= viewport_size.x and screen.y >= 0.0 and screen.y <= viewport_size.y)
 	world._finish_defense(true)
 	assert(Engine.time_scale == 1.0 and not player.movement_locked)
+	assert(victim.state == NpcBase.State.STUNNED and victim.velocity.x == 0.0)
+	assert(victim.get_node("WitnessReaction").text == "Otřesený!")
+	assert(player._get_interaction_hint(victim.interactable) == Player.InteractionHint.ATTACK)
+	victim.is_assassin = true
+	victim._attack_cooldown = 0.0
+	assert(not victim.alert_to_stalk(player))
+	victim._process_stun(1.5)
+	assert(victim.state == NpcBase.State.STUNNED and victim.velocity.x == 0.0)
+	victim._process_stun(1.6)
+	assert(victim.state == NpcBase.State.WANDER)
+	victim.stun_after_defense(player)
+	player._active_target = victim.interactable
+	Input.action_press(&"interact")
+	player._handle_interaction(victim.interactable.interaction_duration + 0.1)
+	Input.action_release(&"interact")
+	assert(victim.state == NpcBase.State.DEAD)
 	world._update_camera_clamp(1.0)
 	assert(absf(world._player_camera.global_position.y - player.global_position.y - world._camera_base_offset.y) < 0.02)
 	world.queue_free()

@@ -9,6 +9,7 @@ enum State {
 	EVADE,
 	FLEE,
 	DEAD,
+	STUNNED,
 }
 
 signal died(npc: NpcBase, killer: Node3D)
@@ -17,6 +18,7 @@ signal fled_level(npc: NpcBase, exit_side: int) # -1 = vlevo, +1 = vpravo
 const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
 const WITNESS_RANGE := 6.0
 const STALK_TIME_LIMIT := 8.0
+const DEFENSE_STUN_DURATION := 3.0
 
 @export var visuals: CharacterVisuals
 @export var interactable: InteractableNpc
@@ -99,6 +101,7 @@ var _evade_timer: float = 0.0
 var _evade_target_x: float = 0.0
 var _flee_exit_side: int = 1
 var _witness_reaction_tween: Tween
+var _stun_time_left: float = 0.0
 
 
 func _ready() -> void:
@@ -182,6 +185,8 @@ func _physics_process(delta: float) -> void:
 			_process_evade(delta)
 		State.FLEE:
 			_process_flee(delta)
+		State.STUNNED:
+			_process_stun(delta)
 
 	velocity.z = 0.0
 	move_and_slide()
@@ -300,7 +305,7 @@ func _reset_glance_timer() -> void:
 #region Assassin AI (Stalk, Attack, Flee)
 
 func alert_to_stalk(target: Node3D) -> bool:
-	if not is_assassin or state in [State.DEAD, State.FLEE, State.ATTACK] or _attack_cooldown > 0.0 or _is_in_passive_immunity_zone():
+	if not is_assassin or state in [State.DEAD, State.FLEE, State.ATTACK, State.STUNNED] or _attack_cooldown > 0.0 or _is_in_passive_immunity_zone():
 		return false
 	if not _is_valid_attack_target(target) or _target_is_safe(target):
 		return false
@@ -427,6 +432,23 @@ func _abort_attack(keep_attack_pose: bool = false) -> void:
 	_pick_new_wander_target()
 
 
+func stun_after_defense(player: Player) -> void:
+	state = State.STUNNED
+	_stun_time_left = DEFENSE_STUN_DURATION
+	_attack_cooldown = maxf(_attack_cooldown, DEFENSE_STUN_DURATION + 1.0)
+	velocity.x = 0.0
+	_looking_right = player.global_position.x < global_position.x
+	_show_reaction("Otřesený!", DEFENSE_STUN_DURATION)
+
+
+func _process_stun(delta: float) -> void:
+	velocity.x = 0.0
+	_stun_time_left -= delta
+	if _stun_time_left <= 0.0:
+		state = State.WANDER
+		_pick_new_wander_target()
+
+
 func _evade_danger(danger_x: float) -> void:
 	if is_assassin or state == State.DEAD:
 		return
@@ -512,7 +534,7 @@ func is_safe_from_attack() -> bool:
 
 
 func is_looking_at(target: Node3D) -> bool:
-	if not is_instance_valid(target):
+	if state == State.STUNNED or not is_instance_valid(target):
 		return false
 	var target_is_right := target.global_position.x >= global_position.x
 	return target_is_right == _looking_right
@@ -566,16 +588,21 @@ func _startle_nearby_civilians() -> int:
 
 
 func _show_witness_reaction() -> void:
+	_show_reaction("Pomoc!", 2.0)
+	if voice_flee and _voice_player:
+		AudioManager.try_play_crowd_voice_3d(_voice_player, voice_flee, 1.5)
+
+
+func _show_reaction(message: String, duration: float) -> void:
 	var label := get_node_or_null("WitnessReaction") as Label3D
 	if label:
 		if _witness_reaction_tween and _witness_reaction_tween.is_valid():
 			_witness_reaction_tween.kill()
+		label.text = message
 		label.show()
 		_witness_reaction_tween = create_tween()
-		_witness_reaction_tween.tween_interval(2.0)
+		_witness_reaction_tween.tween_interval(duration)
 		_witness_reaction_tween.tween_callback(label.hide)
-	if voice_flee and _voice_player:
-		AudioManager.try_play_crowd_voice_3d(_voice_player, voice_flee, 1.5)
 
 
 func _alert_nearby_assassins(player_node: Node3D) -> void:
@@ -630,7 +657,7 @@ func _move_horizontally(dir: float, speed: float) -> void:
 
 
 func _update_head_look_variety(delta: float) -> void:
-	if state in [State.ATTACK, State.EVADE, State.FLEE, State.DEAD]:
+	if state in [State.ATTACK, State.EVADE, State.FLEE, State.DEAD, State.STUNNED]:
 		_camera_glance_time_left = 0.0
 		_vertical_look_offset = 0.0
 		return

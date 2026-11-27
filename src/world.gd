@@ -211,6 +211,8 @@ func _finish_defense(defended: bool) -> void:
 	_game_hud.finish_defense_prompt(defended)
 	if attacker_active:
 		attacker.set_physics_process(true)
+		if defended:
+			attacker.stun_after_defense(_player)
 		if attacker.visuals:
 			if defended:
 				attacker.visuals.cancel_attack_windup()
