@@ -16,7 +16,9 @@ offset_top = 12.0
 offset_right = -16.0
 offset_bottom = 38.0
 grow_horizontal = 0
-text = "[Tab] Seznam assassinů"
+theme_override_colors/font_outline_color = Color(0.075, 0.105, 0.13, 1)
+theme_override_constants/outline_size = 7
+text = "[Tab] Portréty assassinů"
 horizontal_alignment = 2
 
 [node name="ListPanel" type="PanelContainer" parent="."]
@@ -51,13 +53,18 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
-text = "Seznam assassinů"
+text = "Hledaní assassini"
 
 [node name="CountLabel" type="Label" parent="ListPanel/MarginContainer/VBoxContainer/HeaderRow"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "0 / 0"
+text = "0 naživu"
+
+[node name="CompareHint" type="Label" parent="ListPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.79, 0.85, 0.85, 1)
+text = "Najdi stejné tváře v davu."
 
 [node name="ScrollContainer" type="ScrollContainer" parent="ListPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2

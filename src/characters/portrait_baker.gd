@@ -51,8 +51,7 @@ static func bake_portraits(
 	host_node.add_child(viewport)
 
 	# Skryjeme tělo, fotíme jen hlavu (případně budoucí 3D vlasy + uši)
-	if visuals.body_sprite:
-		visuals.body_sprite.visible = false
+	visuals.body_rig.hide()
 	visuals.look_forward()
 	visuals.head_pivot.rotation = Vector3.ZERO
 

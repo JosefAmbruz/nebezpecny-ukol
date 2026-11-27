@@ -8,6 +8,7 @@
 [ext_resource type="Script" uid="uid://bmonou5unw40" path="res://src/characters/character_appearance.gd" id="5_app"]
 [ext_resource type="AudioStream" uid="uid://c0hk2b0gn2870" path="res://assets/dabing/pacato-dabing.wav" id="5_njovb"]
 [ext_resource type="Texture2D" uid="uid://bdq1gp6gj44s7" path="res://assets/faces/face5.png" id="6_eemcn"]
+[ext_resource type="AudioStream" uid="uid://0uolxp2qc8qd" path="res://assets/sfx/freesound_community-street-distant-tram-noise-28842.mp3" id="7_8kjpi"]
 [ext_resource type="Texture2D" uid="uid://c63kanxt4ith8" path="res://assets/faces/face9.png" id="7_njovb"]
 [ext_resource type="Texture2D" uid="uid://ccvlooqira1os" path="res://assets/environment/door.png" id="8_a3wil"]
 [ext_resource type="Script" uid="uid://nsybtej0atxt" path="res://src/world.gd" id="8_world"]
@@ -82,7 +83,7 @@ shape = SubResource("ConcavePolygonShape3D_eemcn")
 
 [node name="Level1" type="Node3D" parent="Levels" unique_id=688422837 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
-level_name = "Level 1 – Start (Padrino Pacato)"
+level_name = "Start"
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")
 quest_npc_spawn = NodePath("QuestNpcSpawn")
@@ -110,7 +111,7 @@ texture = ExtResource("8_a3wil")
 [node name="Level2" type="Node3D" parent="Levels" unique_id=714084602 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
 level_id = 1
-level_name = "Level 2 – Náměstí (Madrina Metticulosa)"
+level_name = "Náměstí"
 civilian_count = 5
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")
@@ -118,6 +119,7 @@ quest_npc_spawn = NodePath("QuestNpcSpawn")
 quest_npc_role = 1
 quest_npc_appearance = SubResource("Resource_lsgvq")
 quest_npc_voice = ExtResource("5_njovb")
+ambient_stream = ExtResource("7_8kjpi")
 preview_color = Color(0.3, 0.65, 0.95, 1)
 
 [node name="LeftBound" type="Marker3D" parent="Levels/Level2" unique_id=1431897030]
@@ -139,7 +141,7 @@ mesh = SubResource("BoxMesh_marker")
 [node name="Level3" type="Node3D" parent="Levels" unique_id=1021442553 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
 level_id = 2
-level_name = "Level 3 – Park (Padrino Moretti)"
+level_name = "Park"
 civilian_count = 5
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")

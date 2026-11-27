@@ -1,12 +1,16 @@
 class_name Player
 extends CharacterBody3D
 
+enum InteractionHint { NONE, APPROACH, TALK, QUEST_UNAVAILABLE, PROTECTED, ATTACK, WAIT, RELEASE }
+
 signal interaction_started(target: InteractableNpc, kind: InteractableNpc.InteractionKind)
 signal interaction_progress_changed(progress: float, kind: InteractableNpc.InteractionKind)
 signal interaction_cancelled
 signal interaction_completed(target: InteractableNpc, kind: InteractableNpc.InteractionKind)
+signal interaction_hint_changed(hint: InteractionHint)
 signal safe_state_changed(is_safe: bool, can_lean: bool)
-signal killed_by_assassin(attacker: Node3D)
+signal defense_requested(attacker: Node3D)
+signal killed_by_assassin(attacker: Node3D, death_animation: Tween)
 
 const INTERACTABLE_NPC_MASK: int = 1 << 1 # Layer 2: InteractableNPC
 const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
@@ -49,6 +53,7 @@ var _last_reported_safe: bool = false
 var _last_reported_can_lean: bool = false
 
 var _active_target: InteractableNpc = null
+var _interaction_hint: InteractionHint = InteractionHint.NONE
 var _interact_elapsed: float = 0.0
 var _caught_grace_elapsed: float = 0.0
 
@@ -100,6 +105,7 @@ func set_movement_locked(locked: bool) -> void:
 	movement_locked = locked
 	if locked:
 		_cancel_interaction()
+		_set_interaction_hint(InteractionHint.NONE)
 
 
 func _handle_movement(delta: float) -> void:
@@ -146,7 +152,7 @@ func _update_gaze_and_visuals() -> void:
 
 	if absf(velocity.x) > 0.1:
 		visuals.set_facing_right(velocity.x > 0.0)
-		visuals.play_state(&"run")
+		visuals.play_state(&"run", velocity.x)
 	else:
 		visuals.set_facing_right(_looking_right)
 		visuals.play_state(&"idle")
@@ -230,10 +236,14 @@ func is_looking_at(target: Node3D) -> bool:
 func _handle_interaction(delta: float) -> void:
 	if _is_leaning or movement_locked:
 		_cancel_interaction()
+		_set_interaction_hint(InteractionHint.NONE)
 		return
 
+	var hovered := _pick_npc_under_cursor()
+	var focus := _active_target if is_instance_valid(_active_target) else hovered
+	_set_interaction_hint(_get_interaction_hint(focus))
+
 	if Input.is_action_just_pressed(&"interact"):
-		var hovered := _pick_npc_under_cursor()
 		var blocked_by_immunity := (
 			hovered != null
 			and hovered.interaction_kind == InteractableNpc.InteractionKind.ASSASSINATE
@@ -246,7 +256,8 @@ func _handle_interaction(delta: float) -> void:
 			interaction_started.emit(_active_target, _active_target.interaction_kind)
 			interaction_progress_changed.emit(0.0, _active_target.interaction_kind)
 
-	if not _active_target:
+	if not is_instance_valid(_active_target):
+		_cancel_interaction()
 		return
 
 	if not Input.is_action_pressed(&"interact"):
@@ -275,6 +286,8 @@ func _handle_interaction(delta: float) -> void:
 	_interact_elapsed += delta
 	var duration := maxf(0.05, _active_target.interaction_duration)
 	var progress := clampf(_interact_elapsed / duration, 0.0, 1.0)
+	if visuals and _active_target.interaction_kind == InteractableNpc.InteractionKind.ASSASSINATE:
+		visuals.prepare_attack(_active_target.get_character_root(), progress)
 	interaction_progress_changed.emit(progress, _active_target.interaction_kind)
 
 	if _interact_elapsed >= duration:
@@ -285,13 +298,35 @@ func _handle_interaction(delta: float) -> void:
 		_caught_grace_elapsed = 0.0
 
 		if completed_kind == InteractableNpc.InteractionKind.ASSASSINATE and visuals:
-			visuals.play_state(&"attack")
+			visuals.play_attack(completed_target.get_character_root())
 
 		completed_target.complete_interaction(self)
 		interaction_completed.emit(completed_target, completed_kind)
 
 
+func _get_interaction_hint(target: InteractableNpc) -> InteractionHint:
+	if not target:
+		return InteractionHint.NONE
+	if not _is_within_interact_range(target):
+		return InteractionHint.APPROACH
+	if target.interaction_kind == InteractableNpc.InteractionKind.QUEST:
+		return InteractionHint.TALK if target.can_be_interacted_by(self) else InteractionHint.QUEST_UNAVAILABLE
+	if not target.can_be_interacted_by(self):
+		return InteractionHint.PROTECTED
+	if target.is_looking_at(self):
+		return InteractionHint.RELEASE if target == _active_target else InteractionHint.WAIT
+	return InteractionHint.ATTACK
+
+
+func _set_interaction_hint(hint: InteractionHint) -> void:
+	if hint != _interaction_hint:
+		_interaction_hint = hint
+		interaction_hint_changed.emit(hint)
+
+
 func _cancel_interaction() -> void:
+	if visuals:
+		visuals.cancel_attack_windup()
 	if not _active_target:
 		return
 	_active_target = null
@@ -329,9 +364,13 @@ func on_killed_by_assassin(attacker: Node3D) -> void:
 	if not is_alive or is_safe_from_attack():
 		return
 	is_alive = false
+	$PlayerMarker.hide()
+	velocity = Vector3.ZERO
 	_cancel_interaction()
 	_stop_leaning()
-	killed_by_assassin.emit(attacker)
+	has_balloon = false
+	var death_animation := visuals.play_death(attacker) if visuals else null
+	killed_by_assassin.emit(attacker, death_animation)
 
 
 func _on_attack_hit() -> void:

@@ -58,6 +58,7 @@ func _ready() -> void:
 			visuals.set_headwear(default_hat_scene)
 
 	_configure_by_role()
+	$NameMarker.text = display_name
 	_pick_new_wander_target()
 
 
@@ -137,7 +138,7 @@ func _physics_process(delta: float) -> void:
 		visuals.look_at_world_point(global_position + Vector3(look_x, 1.25, 2.0))
 		if absf(velocity.x) > 0.1:
 			visuals.set_facing_right(velocity.x > 0.0)
-			visuals.play_state(&"run")
+			visuals.play_state(&"run", velocity.x)
 		else:
 			visuals.play_state(&"idle")
 
