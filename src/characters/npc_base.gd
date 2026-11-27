@@ -111,6 +111,10 @@ func _ready() -> void:
 	add_to_group(&"npcs")
 	if is_assassin:
 		add_to_group(&"assassins")
+		var preset := Difficulty.get_preset()
+		detect_range *= preset["detect_range_mult"]
+		stalk_trigger_chance_per_sec *= preset["stalk_chance_mult"]
+		attack_duration *= preset["attack_duration_mult"]
 
 	if visuals and appearance:
 		visuals.appearance = appearance

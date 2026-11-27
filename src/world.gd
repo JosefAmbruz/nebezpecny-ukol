@@ -1,6 +1,5 @@
 extends Node3D
 
-const DEFENSE_WINDOW_MS := 1500
 const DEFENSE_TIME_SCALE := 0.18
 
 @export var appearance_pool: AppearancePool = preload("res://src/characters/default_appearance_pool.tres")
@@ -65,12 +64,22 @@ var _match_ended: bool = false
 var _defense_attacker: NpcBase
 var _defense_deadline_ms: int = 0
 var _normal_time_scale: float = 1.0
+var _defense_window_ms: int = 1500
+
+
+func _init() -> void:
+	var preset := Difficulty.get_preset()
+	total_assassins = preset["total_assassins"]
+	match_duration_seconds = preset["match_duration_seconds"]
+	max_toothbrushes = preset["max_toothbrushes"]
+	_defense_window_ms = preset["defense_window_ms"]
 
 
 func _ready() -> void:
 	for child in _levels_root.get_children():
 		if child is LevelZone:
 			_levels.append(child)
+	_player.reaction_grace_time = Difficulty.get_preset()["reaction_grace_time"]
 	_levels.sort_custom(func(a: LevelZone, b: LevelZone) -> bool: return a.level_id < b.level_id)
 
 	if not _levels.is_empty():
@@ -162,7 +171,7 @@ func _process(delta: float) -> void:
 		if remaining_ms <= 0:
 			_finish_defense(false)
 		else:
-			_game_hud.set_defense_progress(float(remaining_ms) / DEFENSE_WINDOW_MS)
+			_game_hud.set_defense_progress(float(remaining_ms) / _defense_window_ms)
 		return
 	_update_match_clock(delta)
 
@@ -186,7 +195,7 @@ func _start_defense(attacker: NpcBase) -> void:
 			attacker.visuals.cancel_attack_windup()
 		return
 	_defense_attacker = attacker
-	_defense_deadline_ms = Time.get_ticks_msec() + DEFENSE_WINDOW_MS
+	_defense_deadline_ms = Time.get_ticks_msec() + _defense_window_ms
 	_normal_time_scale = Engine.time_scale
 	Engine.time_scale *= DEFENSE_TIME_SCALE
 	_player.set_movement_locked(true)
