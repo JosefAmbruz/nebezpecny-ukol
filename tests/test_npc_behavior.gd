@@ -1,16 +1,16 @@
-extends SceneTree
+extends Node
 
-# Run with godot --headless --path . --script res://tests/test_npc_behavior.gd.
+# Run with godot --headless --path . res://tests/test_npc_behavior.tscn.
 
 
-func _initialize() -> void:
-	create_timer(3.0).timeout.connect(quit.bind(1))
+func _ready() -> void:
+	get_tree().create_timer(3.0).timeout.connect(get_tree().quit.bind(1))
 	_run_test.call_deferred()
 
 
 func _run_test() -> void:
 	var player := Player.new()
-	root.add_child(player)
+	get_tree().root.add_child(player)
 	var victim := _spawn_npc(0.5)
 	var witness := _spawn_npc(2.0)
 	var distant_civilian := _spawn_npc(12.0)
@@ -87,12 +87,12 @@ func _run_test() -> void:
 	distant_civilian._pick_new_wander_target()
 	assert(distant_civilian._wander_target_x < distant_civilian.position.x)
 	print("Civilian reactions, local alerts, target selection, stalking, and boundary wandering passed.")
-	quit()
+	get_tree().quit()
 
 
 func _spawn_npc(x: float, assassin: bool = false) -> NpcBase:
 	var npc := NpcBase.new()
 	npc.position.x = x
 	npc.is_assassin = assassin
-	root.add_child(npc)
+	get_tree().root.add_child(npc)
 	return npc
