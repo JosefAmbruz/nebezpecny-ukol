@@ -12,6 +12,10 @@ const DEFENSE_TIME_SCALE := 0.18
 @export var score_assassin_kill: int = 100
 @export var score_civilian_penalty: int = -50
 @export var score_quest_bonus: int = 300
+@export var score_silent_bonus: int = 50
+## Každý další assassin v řadě bez chyby přidá k násobiči tuto hodnotu.
+@export var combo_step: float = 0.5
+@export var max_combo_multiplier: float = 3.0
 
 @export_group("Camera")
 @export var camera_half_width: float = 6.0
@@ -60,6 +64,9 @@ var _score: int = 0
 var _assassins_eliminated: int = 0
 var _broken_toothbrushes: int = 0
 var _quest_completed: bool = false
+var _kill_streak: int = 0
+var _best_streak: int = 0
+var _silent_kills: int = 0
 var _match_ended: bool = false
 var _defense_attacker: NpcBase
 var _defense_deadline_ms: int = 0
@@ -98,6 +105,7 @@ func _ready() -> void:
 	_director.rival_found_battery.connect(_on_rival_found_battery)
 	_player.defense_requested.connect(_start_defense)
 	_player.killed_by_assassin.connect(_on_player_killed)
+	_player.assassination_spotted.connect(_break_combo)
 	_player.interaction_started.connect(_on_player_interaction_started)
 	_player.interaction_progress_changed.connect(_on_player_interaction_progress_changed)
 	_player.interaction_cancelled.connect(_on_player_interaction_ended)
@@ -372,9 +380,22 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 	var points := score_assassin_kill if npc.is_assassin else score_civilian_penalty
 	if killer == _player:
 		AudioManager.play_sfx(sfx_assassin_tag if npc.is_assassin else sfx_brush_break)
+		var notes := PackedStringArray()
+		if npc.is_assassin:
+			_kill_streak += 1
+			_best_streak = maxi(_best_streak, _kill_streak)
+			if _kill_streak > 1:
+				points = roundi(points * _combo_multiplier(_kill_streak))
+				notes.append("Kombo ×%s" % _format_multiplier(_combo_multiplier(_kill_streak)))
+			if npc.witness_count == 0:
+				points += score_silent_bonus
+				_silent_kills += 1
+				notes.append("Tiše +%d" % score_silent_bonus)
+		else:
+			_kill_streak = 0
 		_add_score(points)
 		if npc.visuals:
-			npc.visuals.show_score_popup(points)
+			npc.visuals.show_score_popup(points, " · ".join(notes))
 		if npc.is_assassin:
 			_assassins_eliminated += 1
 		else:
@@ -449,8 +470,29 @@ func _format_leaderboard() -> String:
 
 func _add_score(delta_score: int) -> void:
 	_score += delta_score
-	if _game_hud:
-		_game_hud.set_score(_score)
+	_refresh_score_hud()
+
+
+func _break_combo() -> void:
+	_kill_streak = 0
+	_refresh_score_hud()
+
+
+## Násobič pro n-tého assassina v řadě: 1. ×1, 2. ×1.5, 3. ×2, ...
+func _combo_multiplier(streak: int) -> float:
+	return minf(1.0 + combo_step * maxi(0, streak - 1), max_combo_multiplier)
+
+
+func _format_multiplier(multiplier: float) -> String:
+	return ("%.1f" % multiplier).trim_suffix(".0")
+
+
+func _refresh_score_hud() -> void:
+	if not _game_hud:
+		return
+	# HUD ukazuje násobič, který dostane příští likvidace
+	var combo := "" if _kill_streak == 0 else "Další ×%s" % _format_multiplier(_combo_multiplier(_kill_streak + 1))
+	_game_hud.set_score(_score, combo)
 
 
 func _end_match(title: String, summary: String, death_animation: Tween = null) -> void:
@@ -464,7 +506,7 @@ func _end_match(title: String, summary: String, death_animation: Tween = null) -
 	if death_animation:
 		await death_animation.finished
 	if _game_hud:
-		var results := "%s\nVyřazení assassini: %d\nZasažení civilisté: %d\nÚkol: %s" % [
-			summary, _assassins_eliminated, _broken_toothbrushes, "splněn" if _quest_completed else "nesplněn"
+		var results := "%s\nVyřazení assassini: %d\nTiché likvidace: %d\nNejdelší kombo: %d\nZasažení civilisté: %d\nÚkol: %s" % [
+			summary, _assassins_eliminated, _silent_kills, _best_streak, _broken_toothbrushes, "splněn" if _quest_completed else "nesplněn"
 		]
 		_game_hud.show_end_screen(title, results, _format_leaderboard())

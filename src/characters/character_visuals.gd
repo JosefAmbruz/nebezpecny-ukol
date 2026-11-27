@@ -351,10 +351,10 @@ func play_death(attacker: Node3D) -> Tween:
 	return tween
 
 
-func show_score_popup(points: int) -> void:
+func show_score_popup(points: int, note: String = "") -> void:
 	var popup := Label3D.new()
 	popup.name = "ScorePopup"
-	popup.text = "%+d" % points
+	popup.text = "%+d" % points if note.is_empty() else "%+d\n%s" % [points, note]
 	popup.font_size = 42
 	popup.outline_size = 10
 	popup.pixel_size = 0.009

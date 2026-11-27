@@ -154,6 +154,7 @@ text = "[b]A / D nebo šipky[/b] | Pohyb. Myší se rozhlížej a pohledem odra�
 [b]F[/b] | Odraz útok, když se čas zpomalí a objeví se výzva.
 [b]Svědci[/b] | Blízcí civilisté po útoku utečou a mohou upozornit assassiny.
 [b]Skóre[/b] | Assassin body přidá, civilista je ubere. Úkol je za bonus.
+[b]Kombo[/b] | Assassini za sebou bez chyby násobí body. Likvidace bez svědků dá bonus.
 [b]Obtížnost[/b] | Lehká: víc kartáčků a času na obranu. Těžká: víc assassinů, kratší zápas, rychlejší útoky."
 
 [connection signal="item_selected" from="Center/Content/DifficultyRow/Difficulty" to="." method="_on_difficulty_selected"]

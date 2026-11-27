@@ -11,6 +11,7 @@ signal interaction_hint_changed(hint: InteractionHint)
 signal safe_state_changed(is_safe: bool, can_lean: bool)
 signal defense_requested(attacker: Node3D)
 signal killed_by_assassin(attacker: Node3D, death_animation: Tween)
+signal assassination_spotted
 
 const INTERACTABLE_NPC_MASK: int = 1 << 1 # Layer 2: InteractableNPC
 const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
@@ -282,6 +283,8 @@ func _handle_interaction(delta: float) -> void:
 	if _active_target.is_looking_at(self):
 		_caught_grace_elapsed += delta
 		if _caught_grace_elapsed >= reaction_grace_time:
+			if _active_target.interaction_kind == InteractableNpc.InteractionKind.ASSASSINATE:
+				assassination_spotted.emit()
 			_active_target.notify_caught_attempt(self)
 			_cancel_interaction()
 		return

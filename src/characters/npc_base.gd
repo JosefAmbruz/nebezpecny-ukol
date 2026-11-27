@@ -103,6 +103,8 @@ var _evade_target_x: float = 0.0
 var _flee_exit_side: int = 1
 var _witness_reaction_tween: Tween
 var _stun_time_left: float = 0.0
+## Počet civilistů, kteří viděli smrt tohoto NPC (platí až po smrti).
+var witness_count: int = 0
 
 
 func _ready() -> void:
@@ -577,9 +579,9 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 			visuals.play_death(actor)
 		if voice_death:
 			AudioManager.play_sfx(voice_death, 0.0, 0.06)
+		witness_count = _startle_nearby_civilians()
 		died.emit(self, actor)
-		var witnesses := _startle_nearby_civilians()
-		if witnesses > 0 and actor is Player:
+		if witness_count > 0 and actor is Player:
 			_alert_nearby_assassins(actor)
 
 

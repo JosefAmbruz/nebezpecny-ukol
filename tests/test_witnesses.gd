@@ -9,7 +9,7 @@ func _ready() -> void:
 	var assassin := _spawn_npc(-2.0, true)
 	var victim := _spawn_npc(0.5, true)
 	victim.on_interaction_completed(player, InteractableNpc.InteractionKind.ASSASSINATE)
-	assert(witness.state == NpcBase.State.EVADE)
+	assert(witness.state == NpcBase.State.EVADE and victim.witness_count == 1)
 	assert(witness.get_node("WitnessReaction").visible)
 	assert(distant.state == NpcBase.State.WANDER)
 	assert(assassin.state == NpcBase.State.STALK and assassin._stalk_target == player)
@@ -19,6 +19,7 @@ func _ready() -> void:
 	assassin._attack_cooldown = 0.0
 	var isolated_victim := _spawn_npc(0.5)
 	isolated_victim.on_interaction_completed(player, InteractableNpc.InteractionKind.ASSASSINATE)
+	assert(isolated_victim.witness_count == 0)
 	assert(assassin.state == NpcBase.State.WANDER)
 
 	witness.position.x = 2.0

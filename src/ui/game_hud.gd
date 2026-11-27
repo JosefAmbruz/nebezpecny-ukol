@@ -82,8 +82,8 @@ func set_clock_progress(progress: float) -> void:
 	_clock_label.text = "%02d:%02d / 19:00" % [hours, minutes]
 
 
-func set_score(score: int) -> void:
-	_score_label.text = "Skóre: %d" % score
+func set_score(score: int, combo: String = "") -> void:
+	_score_label.text = "Skóre: %d" % score if combo.is_empty() else "Skóre: %d | %s" % [score, combo]
 
 
 func set_level(level_name: String, level_id: int) -> void:
