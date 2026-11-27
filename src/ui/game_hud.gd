@@ -11,6 +11,9 @@ const TOOTHBRUSH_SHEET: Texture2D = preload("res://assets/misc/toothbrush-ui.png
 @onready var _level_label: Label = %LevelLabel
 @onready var _quest_label: Label = %QuestLabel
 @onready var _quest_route: Label = %QuestRoute
+@onready var _quest_items_row: HBoxContainer = %QuestItemsRow
+@onready var _balloon_icon: TextureRect = %BalloonIcon
+@onready var _battery_icon: TextureRect = %BatteryIcon
 @onready var _toothbrush_container: HBoxContainer = %ToothbrushContainer
 @onready var _end_game_panel: Control = %EndGamePanel
 @onready var _end_title_label: Label = %EndTitleLabel
@@ -109,6 +112,12 @@ func set_quest_state(has_balloon: bool, has_battery: bool, completed: bool) -> v
 	else:
 		_quest_label.text = "Vyzvedni balónek u Madriny Metticulosy"
 		_quest_level_id = 1
+	if _balloon_icon:
+		_balloon_icon.visible = has_balloon
+	if _battery_icon:
+		_battery_icon.visible = has_battery
+	if _quest_items_row:
+		_quest_items_row.visible = has_balloon or has_battery
 	_update_quest_route()
 
 
