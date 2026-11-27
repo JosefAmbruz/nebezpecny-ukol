@@ -112,6 +112,8 @@ var _witness_reaction_tween: Tween
 var _stun_time_left: float = 0.0
 ## Počet civilistů, kteří viděli smrt tohoto NPC (platí až po smrti).
 var witness_count: int = 0
+var _distract_time_left: float = 0.0
+var _distract_point_x: float = 0.0
 
 
 func _ready() -> void:
@@ -184,23 +186,26 @@ func _physics_process(delta: float) -> void:
 	if _attack_cooldown > 0.0:
 		_attack_cooldown = maxf(0.0, _attack_cooldown - delta)
 
-	match state:
-		State.WANDER:
-			_process_wander(delta)
-			if is_assassin:
-				_try_acquire_stalk_target(delta)
-		State.LEAN:
-			_process_lean(delta)
-		State.STALK:
-			_process_stalk(delta)
-		State.ATTACK:
-			_process_attack(delta)
-		State.EVADE:
-			_process_evade(delta)
-		State.FLEE:
-			_process_flee(delta)
-		State.STUNNED:
-			_process_stun(delta)
+	if _distract_time_left > 0.0 and state in [State.WANDER, State.LEAN, State.STALK]:
+		_process_distraction(delta)
+	else:
+		match state:
+			State.WANDER:
+				_process_wander(delta)
+				if is_assassin:
+					_try_acquire_stalk_target(delta)
+			State.LEAN:
+				_process_lean(delta)
+			State.STALK:
+				_process_stalk(delta)
+			State.ATTACK:
+				_process_attack(delta)
+			State.EVADE:
+				_process_evade(delta)
+			State.FLEE:
+				_process_flee(delta)
+			State.STUNNED:
+				_process_stun(delta)
 
 	velocity.z = 0.0
 	move_and_slide()
@@ -464,6 +469,22 @@ func _process_stun(delta: float) -> void:
 	if _stun_time_left <= 0.0:
 		state = State.WANDER
 		_pick_new_wander_target()
+
+
+## Hozená mince: NPC se na chvíli zastaví a dívá se k místu dopadu.
+func distract(point_x: float, duration: float) -> void:
+	if state not in [State.WANDER, State.LEAN, State.STALK]:
+		return
+	_distract_time_left = duration
+	_distract_point_x = point_x
+	_camera_glance_time_left = 0.0
+	_show_reaction("?", duration)
+
+
+func _process_distraction(delta: float) -> void:
+	_distract_time_left -= delta
+	velocity.x = 0.0
+	_looking_right = _distract_point_x >= global_position.x
 
 
 func _evade_danger(danger_x: float) -> void:

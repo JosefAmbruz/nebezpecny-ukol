@@ -88,6 +88,12 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.81, 0.86, 0.85, 1)
 text = "Start"
 
+[node name="DistractionLabel" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.4, 1)
+text = "[Q] Mince: 3"
+
 [node name="Divider" type="HSeparator" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 

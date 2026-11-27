@@ -89,6 +89,7 @@ func _ready() -> void:
 		if child is LevelZone:
 			_levels.append(child)
 	_player.reaction_grace_time = Difficulty.get_preset()["reaction_grace_time"]
+	_player.distractions_left = Difficulty.get_preset()["distractions"]
 	NpcBase.late_pressure = 0.0
 	_levels.sort_custom(func(a: LevelZone, b: LevelZone) -> bool: return a.level_id < b.level_id)
 
@@ -109,6 +110,7 @@ func _ready() -> void:
 	_player.defense_requested.connect(_start_defense)
 	_player.killed_by_assassin.connect(_on_player_killed)
 	_player.assassination_spotted.connect(_break_combo)
+	_player.distraction_thrown.connect(func(_point: Vector3, left: int) -> void: _game_hud.set_distractions(left))
 	_player.interaction_started.connect(_on_player_interaction_started)
 	_player.interaction_progress_changed.connect(_on_player_interaction_progress_changed)
 	_player.interaction_cancelled.connect(_on_player_interaction_ended)
@@ -136,6 +138,7 @@ func _start_match() -> void:
 
 	if _game_hud:
 		_game_hud.set_toothbrushes(max_toothbrushes, _broken_toothbrushes)
+		_game_hud.set_distractions(_player.distractions_left)
 
 	_director.initialize(
 		_levels,

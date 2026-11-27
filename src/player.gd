@@ -12,6 +12,7 @@ signal safe_state_changed(is_safe: bool, can_lean: bool)
 signal defense_requested(attacker: Node3D)
 signal killed_by_assassin(attacker: Node3D, death_animation: Tween)
 signal assassination_spotted
+signal distraction_thrown(point: Vector3, left: int)
 
 const INTERACTABLE_NPC_MASK: int = 1 << 1 # Layer 2: InteractableNPC
 const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
@@ -30,6 +31,12 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 ## Krátké okno pro reakci hráče, aby stihl pustit tlačítko myši, když se NPC otočí.
 @export var reaction_grace_time: float = 0.22
 @export var raycast_length: float = 100.0
+
+@export_group("Distraction (Mince)")
+@export var distractions_left: int = 3
+@export var distraction_radius: float = 4.0
+@export var distraction_throw_range: float = 8.0
+@export var distraction_duration: float = 2.5
 
 @export_group("Lean / Safe")
 @export var lean_cooldown: float = 1.5
@@ -99,6 +106,8 @@ func _physics_process(delta: float) -> void:
 
 	_update_lean_timers(delta)
 	_handle_lean_input()
+	if not movement_locked and Input.is_action_just_pressed(&"distract"):
+		throw_distraction(get_cursor_world_point())
 	_handle_movement(delta)
 	_update_gaze_and_visuals()
 	_handle_interaction(delta)
@@ -187,6 +196,41 @@ func _handle_lean_input() -> void:
 	var lean_obj := _get_available_lean_object()
 	if lean_obj:
 		_start_leaning(lean_obj)
+
+
+## Hodí minci k bodu (omezeno dosahem hodu); NPC v okruhu se otočí za zvukem.
+func throw_distraction(point: Vector3) -> bool:
+	if distractions_left <= 0:
+		return false
+	distractions_left -= 1
+	point.x = clampf(point.x, global_position.x - distraction_throw_range, global_position.x + distraction_throw_range)
+	point.y = global_position.y
+	for node in get_tree().get_nodes_in_group(&"npcs"):
+		var npc := node as NpcBase
+		if npc and absf(npc.global_position.x - point.x) <= distraction_radius:
+			npc.distract(point.x, distraction_duration)
+	_spawn_distraction_marker(point)
+	distraction_thrown.emit(point, distractions_left)
+	return true
+
+
+func _spawn_distraction_marker(point: Vector3) -> void:
+	if not is_inside_tree():
+		return
+	var marker := Label3D.new()
+	marker.text = "*cink*"
+	marker.font_size = 36
+	marker.outline_size = 8
+	marker.pixel_size = 0.008
+	marker.modulate = Color(1.0, 0.86, 0.4)
+	marker.no_depth_test = true
+	marker.top_level = true
+	add_child(marker)
+	marker.global_position = point + Vector3(0.0, 0.4, 1.0)
+	var tween := marker.create_tween().set_parallel()
+	tween.tween_property(marker, "global_position:y", marker.global_position.y + 0.5, 0.8)
+	tween.tween_property(marker, "modulate:a", 0.0, 0.8).set_delay(0.3)
+	tween.chain().tween_callback(marker.queue_free)
 
 
 func _start_leaning(safe_obj: SafeObject) -> void:

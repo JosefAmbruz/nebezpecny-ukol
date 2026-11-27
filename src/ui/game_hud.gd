@@ -98,6 +98,11 @@ func show_rival_battery(rival_name: String, level_name: String) -> void:
 	%RivalEvent.show()
 
 
+func set_distractions(left: int) -> void:
+	%DistractionLabel.text = "[Q] Mince: %d" % left
+	%DistractionLabel.modulate = Color.WHITE if left > 0 else Color(1, 1, 1, 0.45)
+
+
 func show_event(message: String) -> void:
 	%EventLabel.text = "%s | %s" % [_clock_label.text.get_slice(" /", 0), message]
 	%EventLabel.show()
