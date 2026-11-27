@@ -188,6 +188,7 @@ func _process(delta: float) -> void:
 			_game_hud.set_defense_progress(float(remaining_ms) / _defense_window_ms)
 		return
 	_update_match_clock(delta)
+	_game_hud.set_heat(_player.heat_time_left)
 
 
 func _input(event: InputEvent) -> void:
@@ -369,6 +370,8 @@ func _update_match_clock(delta: float) -> void:
 
 func _on_level_activated(zone: LevelZone) -> void:
 	_active_zone = zone
+	# Nová čtvrť = noví lidé, kteří hráče neviděli.
+	_player.clear_heat()
 	if _game_hud:
 		_game_hud.set_level(zone.level_name, zone.level_id)
 	AudioManager.play_ambient(zone.ambient_stream)

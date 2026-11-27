@@ -65,6 +65,9 @@ const DEFENSE_STUN_DURATION := 3.0
 @export var balloon_detect_multiplier: float = 2.5
 @export var balloon_detect_range_multiplier: float = 1.8
 @export var sprint_detect_multiplier: float = 2.5
+## Hráč, kterého viděli zabíjet (rozruch), je nápadnější a vidět ho je z větší dálky.
+@export var heat_detect_multiplier: float = 3.0
+@export var heat_detect_range_multiplier: float = 1.5
 @export var post_abort_cooldown: float = 4.0
 ## Při plném tlaku závěru zápasu se šance začít stopovat násobí touto hodnotou.
 @export var late_stalk_multiplier: float = 2.0
@@ -348,7 +351,7 @@ func _try_acquire_stalk_target(delta: float) -> void:
 			if target == self or not _is_valid_attack_target(target):
 				continue
 			var distance := absf(target.global_position.x - global_position.x)
-			var target_range := detect_range * maxf(1.0, balloon_detect_range_multiplier) if target.get(&"has_balloon") == true else detect_range
+			var target_range := _detect_range_for(target)
 			if distance > target_range or _target_is_safe(target):
 				continue
 			var rate := stalk_trigger_chance_per_sec * lerpf(1.0, 0.4, distance / target_range)
@@ -357,11 +360,27 @@ func _try_acquire_stalk_target(delta: float) -> void:
 				rate *= balloon_detect_multiplier
 			if target.get(&"is_sprinting") == true:
 				rate *= sprint_detect_multiplier
+			if _is_hunted(target):
+				rate *= heat_detect_multiplier
 			if rate > best_rate:
 				best_target = target
 				best_rate = rate
 	if best_target and randf() < 1.0 - exp(-best_rate * delta):
 		alert_to_stalk(best_target)
+
+
+func _detect_range_for(target: Node3D) -> float:
+	var target_range := detect_range
+	if target.get(&"has_balloon") == true:
+		target_range *= maxf(1.0, balloon_detect_range_multiplier)
+	if _is_hunted(target):
+		target_range *= maxf(1.0, heat_detect_range_multiplier)
+	return target_range
+
+
+func _is_hunted(target: Node3D) -> bool:
+	var heat: Variant = target.get(&"heat_time_left")
+	return heat != null and heat > 0.0
 
 
 func _process_stalk(delta: float) -> void:
@@ -372,7 +391,7 @@ func _process_stalk(delta: float) -> void:
 	var dist_x := _stalk_target.global_position.x - global_position.x
 	var abs_dist := absf(dist_x)
 	_stalk_time_left -= delta
-	var target_range := detect_range * maxf(1.0, balloon_detect_range_multiplier) if _stalk_target.get(&"has_balloon") == true else detect_range
+	var target_range := _detect_range_for(_stalk_target)
 	if _stalk_time_left <= 0.0 or abs_dist > target_range * 1.6 or _target_is_safe(_stalk_target):
 		_abort_attack()
 		return
@@ -611,6 +630,7 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 		witness_count = _startle_nearby_civilians()
 		died.emit(self, actor)
 		if witness_count > 0 and actor is Player:
+			actor.raise_heat()
 			_alert_nearby_assassins(actor)
 
 

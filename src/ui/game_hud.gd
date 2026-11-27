@@ -103,6 +103,12 @@ func set_distractions(left: int) -> void:
 	%DistractionLabel.modulate = Color.WHITE if left > 0 else Color(1, 1, 1, 0.45)
 
 
+func set_heat(seconds_left: float) -> void:
+	%HeatWarning.visible = seconds_left > 0.0
+	if %HeatWarning.visible:
+		%HeatWarning.text = "Viděli tě! Assassini tě hledají ještě %d s. Schovej se nebo změň čtvrť." % ceili(seconds_left)
+
+
 func show_event(message: String) -> void:
 	%EventLabel.text = "%s | %s" % [_clock_label.text.get_slice(" /", 0), message]
 	%EventLabel.show()

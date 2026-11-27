@@ -38,6 +38,12 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 @export var distraction_throw_range: float = 8.0
 @export var distraction_duration: float = 2.5
 
+@export_group("Heat (Rozruch)")
+## Jak dlouho po zabití před svědky o hráči vědí assassini v okolí.
+@export var heat_duration: float = 20.0
+## Ve schovávačce (opření, zóna imunity) rozruch opadá rychleji.
+@export var heat_hidden_decay_multiplier: float = 4.0
+
 @export_group("Lean / Safe")
 @export var lean_cooldown: float = 1.5
 
@@ -48,6 +54,7 @@ var has_balloon: bool = false:
 var has_battery: bool = false
 var is_alive: bool = true
 var is_sprinting: bool = false
+var heat_time_left: float = 0.0
 var movement_locked: bool = false
 
 var _balloon_instance: Node3D = null
@@ -105,6 +112,8 @@ func _physics_process(delta: float) -> void:
 		return
 
 	_update_lean_timers(delta)
+	if heat_time_left > 0.0:
+		heat_time_left = maxf(0.0, heat_time_left - delta * (heat_hidden_decay_multiplier if is_safe_from_attack() else 1.0))
 	_handle_lean_input()
 	if not movement_locked and Input.is_action_just_pressed(&"distract"):
 		throw_distraction(get_cursor_world_point())
@@ -196,6 +205,14 @@ func _handle_lean_input() -> void:
 	var lean_obj := _get_available_lean_object()
 	if lean_obj:
 		_start_leaning(lean_obj)
+
+
+func raise_heat() -> void:
+	heat_time_left = heat_duration
+
+
+func clear_heat() -> void:
+	heat_time_left = 0.0
 
 
 ## Hodí minci k bodu (omezeno dosahem hodu); NPC v okruhu se otočí za zvukem.
