@@ -22,6 +22,9 @@ func _run_test() -> void:
 	assert(distant_civilian.state == NpcBase.State.WANDER)
 	assert(assassin.state == NpcBase.State.STALK and assassin._stalk_target == player)
 	assert(distant_assassin.state == NpcBase.State.WANDER)
+	assert(player.heat_time_left > 0.0)
+	# Rozruch zvětšuje dosah; zbytek testu ověřuje běžný dosah.
+	player.clear_heat()
 
 	witness._process_evade(0.1)
 	assert(witness.velocity.x > witness.walk_speed)
