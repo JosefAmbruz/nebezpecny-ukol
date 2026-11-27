@@ -4,6 +4,7 @@ extends Node
 signal npc_died(npc: NpcBase, killer: Node3D)
 signal quest_npc_interacted(npc: QuestNpc, actor: Node3D, role: QuestNpc.Role)
 signal level_activated(zone: LevelZone)
+signal rival_found_battery(data: CharacterData, zone: LevelZone)
 
 const NPC_BASE_SCENE: PackedScene = preload("res://src/characters/npc_base.tscn")
 const QUEST_NPC_SCENE: PackedScene = preload("res://src/characters/quest_npc.tscn")
@@ -245,6 +246,7 @@ func _step_frozen_assassin(rec: Dictionary) -> void:
 			CharacterData.QuestStage.HAS_BALLOON:
 				if current_lvl == 2:
 					data.quest_stage = CharacterData.QuestStage.HAS_BATTERY
+					rival_found_battery.emit(data, _get_zone(current_lvl))
 					return
 				_move_record_toward_level(rec, 2)
 				return

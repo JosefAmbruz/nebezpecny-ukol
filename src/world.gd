@@ -85,6 +85,7 @@ func _ready() -> void:
 	_director.npc_died.connect(_on_npc_died)
 	_director.quest_npc_interacted.connect(_on_quest_npc_interacted)
 	_director.level_activated.connect(_on_level_activated)
+	_director.rival_found_battery.connect(_on_rival_found_battery)
 	_player.defense_requested.connect(_start_defense)
 	_player.killed_by_assassin.connect(_on_player_killed)
 	_player.interaction_started.connect(_on_player_interaction_started)
@@ -345,6 +346,11 @@ func _on_level_activated(zone: LevelZone) -> void:
 		AudioManager.play_music(zone.music_override)
 	elif background_music:
 		AudioManager.play_music(background_music)
+
+
+func _on_rival_found_battery(data: CharacterData, zone: LevelZone) -> void:
+	if not _match_ended and zone:
+		_game_hud.show_rival_battery(data.display_name, zone.level_name)
 
 
 func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:

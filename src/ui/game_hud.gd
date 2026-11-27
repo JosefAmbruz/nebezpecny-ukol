@@ -92,6 +92,11 @@ func set_level(level_name: String, level_id: int) -> void:
 	_update_quest_route()
 
 
+func show_rival_battery(rival_name: String, level_name: String) -> void:
+	%RivalEvent.text = "%s | %s získal baterii: %s" % [_clock_label.text.get_slice(" /", 0), rival_name, level_name]
+	%RivalEvent.show()
+
+
 func enable_restart() -> void:
 	%Restart.disabled = false
 
