@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/hair/Hair_Buns.gltf" id="1_mesh"]
+
+[node name="HairBuns" type="Node3D"]
+
+[node name="Mesh" parent="." instance=ExtResource("1_mesh")]
+transform = Transform3D(5.5, 0, 0, 0, 5.5, 0, 0, 0, 5.5, -0.0071, -9.2594, 0.0345)
