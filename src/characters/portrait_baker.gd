@@ -43,8 +43,8 @@ static func bake_portraits(
 
 	var camera := Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 1.75
-	camera.position = Vector3(0.0, 1.21, 3.0)
+	camera.size = 2.05
+	camera.position = Vector3(0.0, 1.26, 3.0)
 	camera.current = true
 	viewport.add_child(camera)
 

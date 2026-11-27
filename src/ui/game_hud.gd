@@ -4,7 +4,7 @@ extends CanvasLayer
 const DISTRICTS := ["Start", "Náměstí", "Park"]
 const TOOTHBRUSH_SHEET: Texture2D = preload("res://assets/misc/toothbrush-ui.png")
 
-@export var toothbrush_icon_size: Vector2 = Vector2(64, 52)
+@export var toothbrush_icon_size: Vector2 = Vector2(110, 88)
 
 @onready var _clock_label: Label = %ClockLabel
 @onready var _score_label: Label = %ScoreLabel

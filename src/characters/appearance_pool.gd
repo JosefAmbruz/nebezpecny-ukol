@@ -2,6 +2,16 @@ class_name AppearancePool
 extends Resource
 
 @export var face_textures: Array[Texture2D] = []
+@export var hair_scenes: Array[PackedScene] = []
+@export_range(0.0, 1.0, 0.05) var bald_chance: float = 0.2
+@export var hair_colors: Array[Color] = [
+	Color(0.14, 0.12, 0.11, 1.0), # černá
+	Color(0.32, 0.21, 0.14, 1.0), # tmavě hnědá
+	Color(0.55, 0.37, 0.22, 1.0), # kaštanová
+	Color(0.84, 0.72, 0.42, 1.0), # blond
+	Color(0.72, 0.30, 0.16, 1.0), # zrzavá
+	Color(0.62, 0.62, 0.65, 1.0), # šedá
+]
 @export var skin_colors: Array[Color] = [
 	Color(0.98, 0.85, 0.76, 1.0),
 	Color(0.92, 0.75, 0.62, 1.0),

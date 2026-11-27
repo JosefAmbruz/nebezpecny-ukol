@@ -5,8 +5,14 @@
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ocgbo"]
 albedo_color = Color(0.15127608, 0.15127608, 0.15127608, 1)
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_4drbo"]
+albedo_color = Color(0, 0, 0, 1)
+
 [node name="Sketchfab_Scene" unique_id=1467691271 instance=ExtResource("1_endtu")]
 transform = Transform3D(-1.9670125e-08, 0, -0.45, 0, 0.45, 0, 0.45, 0, -1.9670125e-08, 0, 0, 0)
 
 [node name="Hat_1" parent="Sketchfab_model/Root/Hat" parent_id_path=PackedInt32Array(71276406) index="1" unique_id=1638308641]
 material_override = SubResource("StandardMaterial3D_ocgbo")
+
+[node name="Hat_2" parent="Sketchfab_model/Root/Hat" parent_id_path=PackedInt32Array(71276406) index="2" unique_id=557616704]
+material_override = SubResource("StandardMaterial3D_4drbo")

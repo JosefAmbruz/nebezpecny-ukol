@@ -107,6 +107,14 @@ func _start_match() -> void:
 	)
 	reserved_signatures = CharacterGenerator.collect_reserved_signatures(assassins)
 
+	if _player and _player.visuals:
+		var player_appearance := CharacterGenerator.generate_civilian_appearance(
+			appearance_pool,
+			reserved_signatures
+		)
+		reserved_signatures[player_appearance.get_signature()] = true
+		_player.visuals.appearance = player_appearance
+
 	await PortraitBaker.bake_portraits(self, assassins)
 
 	if _assassin_list_ui:

@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://djc5uqb83307f"]
+
+[ext_resource type="PackedScene" uid="uid://dnbfv78ae2754" path="res://assets/hair/Hair_BuzzedFemale.gltf" id="1_mesh"]
+
+[node name="HairBuzzedFemale" type="Node3D" unique_id=536796785]
+
+[node name="Mesh" parent="." unique_id=1588230176 instance=ExtResource("1_mesh")]
+transform = Transform3D(6, 0, 0, 0, 5.5, 0, 0, 0, 5.2, 0, -9.472449, 0.10120361)

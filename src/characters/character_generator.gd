@@ -15,13 +15,36 @@ static func generate_assassins(
 		push_error("CharacterGenerator: AppearancePool is null.")
 		return result
 
-	var all_appearances := _build_all_unique_appearances(pool)
-	all_appearances.shuffle()
-
 	var available_names: Array[String] = pool.names.duplicate()
 	available_names.shuffle()
 
-	var count := mini(total_count, all_appearances.size())
+	var used_signatures: Dictionary = {}
+	var chosen_appearances: Array[CharacterAppearance] = []
+
+	# Nejdřív zkusíme rychlé náhodné vzorkování (ideální pro velké kombinace s vlasy a barvami)
+	var max_attempts := maxi(64, total_count * 25)
+	for _attempt in range(max_attempts):
+		if chosen_appearances.size() >= total_count:
+			break
+		var candidate := _sample_random_appearance(pool)
+		var sig := candidate.get_signature()
+		if not used_signatures.has(sig):
+			used_signatures[sig] = true
+			chosen_appearances.append(candidate)
+
+	# Pokud pool obsahuje méně kombinací, doplníme zbytek deterministicky bez duplicit
+	if chosen_appearances.size() < total_count:
+		var all_appearances := _build_all_unique_appearances(pool)
+		all_appearances.shuffle()
+		for app in all_appearances:
+			if chosen_appearances.size() >= total_count:
+				break
+			var sig := app.get_signature()
+			if not used_signatures.has(sig):
+				used_signatures[sig] = true
+				chosen_appearances.append(app)
+
+	var count := chosen_appearances.size()
 	if count < total_count:
 		push_warning(
 			"CharacterGenerator: Pool má jen %d unikátních kombinací (požadováno %d)."
@@ -38,7 +61,7 @@ static func generate_assassins(
 			if i < available_names.size()
 			else "Assassin #%d" % (i + 1)
 		)
-		data.appearance = all_appearances[i]
+		data.appearance = chosen_appearances[i]
 		data.is_assassin = true
 		data.is_alive = true
 		data.quest_stage = CharacterData.QuestStage.NONE
@@ -72,6 +95,11 @@ static func generate_civilian_appearance(
 	if not pool:
 		return CharacterAppearance.new()
 
+	for _attempt in range(40):
+		var candidate := _sample_random_appearance(pool)
+		if not reserved_signatures.has(candidate.get_signature()):
+			return candidate
+
 	var free_appearances: Array[CharacterAppearance] = []
 	for app in _build_all_unique_appearances(pool):
 		if not reserved_signatures.has(app.get_signature()):
@@ -80,31 +108,43 @@ static func generate_civilian_appearance(
 	if not free_appearances.is_empty():
 		return free_appearances.pick_random()
 
-	# Fallback pro raný prototyp, pokud jsou všechny kombinace zabrané assassiny
-	var fallback := CharacterAppearance.new()
+	return _sample_random_appearance(pool)
+
+
+static func _sample_random_appearance(pool: AppearancePool) -> CharacterAppearance:
+	var app := CharacterAppearance.new()
 	if not pool.face_textures.is_empty():
-		fallback.face_texture = pool.face_textures.pick_random()
+		app.face_texture = pool.face_textures.pick_random()
 	if not pool.skin_colors.is_empty():
-		fallback.skin_color = pool.skin_colors.pick_random()
-	return fallback
+		app.skin_color = pool.skin_colors.pick_random()
+	if not pool.hair_scenes.is_empty() and randf() >= pool.bald_chance:
+		app.headwear_scene = pool.hair_scenes.pick_random()
+		if not pool.hair_colors.is_empty():
+			app.hair_color = pool.hair_colors.pick_random()
+	return app
 
 
 static func _build_all_unique_appearances(pool: AppearancePool) -> Array[CharacterAppearance]:
 	var list: Array[CharacterAppearance] = []
 	var faces: Array[Texture2D] = pool.face_textures
 	var skins: Array[Color] = pool.skin_colors if not pool.skin_colors.is_empty() else [Color.WHITE]
+	var h_colors: Array[Color] = pool.hair_colors if not pool.hair_colors.is_empty() else [Color(0.18, 0.14, 0.12, 1.0)]
 
-	if faces.is_empty():
+	var face_list: Array = faces if not faces.is_empty() else [null]
+	for face in face_list:
 		for skin in skins:
-			var app := CharacterAppearance.new()
-			app.skin_color = skin
-			list.append(app)
-		return list
+			# Varianta bez vlasů (plešatý)
+			var bald := CharacterAppearance.new()
+			bald.face_texture = face
+			bald.skin_color = skin
+			list.append(bald)
 
-	for face in faces:
-		for skin in skins:
-			var app := CharacterAppearance.new()
-			app.face_texture = face
-			app.skin_color = skin
-			list.append(app)
+			for hair in pool.hair_scenes:
+				for h_col in h_colors:
+					var app := CharacterAppearance.new()
+					app.face_texture = face
+					app.skin_color = skin
+					app.headwear_scene = hair
+					app.hair_color = h_col
+					list.append(app)
 	return list
