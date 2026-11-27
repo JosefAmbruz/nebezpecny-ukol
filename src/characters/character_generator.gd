@@ -22,6 +22,12 @@ static func generate_assassins(
 
 	var used_signatures: Dictionary = {}
 	var clamped_quest_count := mini(quest_count, total_count)
+	var personalities := [
+		CharacterData.Personality.AGGRESSIVE,
+		CharacterData.Personality.PATIENT,
+		CharacterData.Personality.SKITTISH,
+	]
+	personalities.shuffle()
 
 	for i in range(total_count):
 		var gender := _pick_gender_for_assassin(male_names, female_names)
@@ -47,6 +53,7 @@ static func generate_assassins(
 		data.is_assassin = true
 		data.is_alive = true
 		data.quest_stage = CharacterData.QuestStage.NONE
+		data.personality = personalities[i % personalities.size()]
 
 		if i < clamped_quest_count:
 			data.can_do_quest = true

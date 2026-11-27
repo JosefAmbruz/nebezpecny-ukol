@@ -83,10 +83,11 @@ func set_clock_progress(progress: float) -> void:
 	var hours := 18 + int(total_minutes / 60)
 	var minutes := total_minutes % 60
 	_clock_label.text = "%02d:%02d / 19:00" % [hours, minutes]
+	_clock_label.modulate = Color(1.0, 0.55, 0.45) if clamped >= 0.6 else Color.WHITE
 
 
-func set_score(score: int) -> void:
-	_score_label.text = "Skóre: %d" % score
+func set_score(score: int, combo: String = "") -> void:
+	_score_label.text = "Skóre: %d" % score if combo.is_empty() else "Skóre: %d | %s" % [score, combo]
 
 
 func set_level(level_name: String, level_id: int) -> void:
@@ -95,11 +96,34 @@ func set_level(level_name: String, level_id: int) -> void:
 	_update_quest_route()
 
 
+func show_rival_battery(rival_name: String, level_name: String) -> void:
+	%RivalEvent.text = "%s | %s získal baterii: %s" % [_clock_label.text.get_slice(" /", 0), rival_name, level_name]
+	%RivalEvent.show()
+
+
+func set_distractions(left: int) -> void:
+	%DistractionLabel.text = "[Q] Mince: %d" % left
+	%DistractionLabel.modulate = Color.WHITE if left > 0 else Color(1, 1, 1, 0.45)
+
+
+func set_heat(seconds_left: float) -> void:
+	%HeatWarning.visible = seconds_left > 0.0
+	if %HeatWarning.visible:
+		%HeatWarning.text = "Viděli tě! Assassini tě hledají ještě %d s. Schovej se nebo změň čtvrť." % ceili(seconds_left)
+
+
+func show_event(message: String) -> void:
+	%EventLabel.text = "%s | %s" % [_clock_label.text.get_slice(" /", 0), message]
+	%EventLabel.show()
+
+
 func enable_restart() -> void:
 	%Restart.disabled = false
 
 
 func set_quest_state(has_balloon: bool, has_battery: bool, completed: bool) -> void:
+	%BalloonWarning.visible = not completed
+	%BalloonWarning.text = "Balónek přitahuje assassiny. Pozor na okolí!" if has_balloon else "Balónek přitahuje assassiny."
 	if completed:
 		_quest_label.text = "Úkol splněn | Bonus připsán"
 		_quest_level_id = -1

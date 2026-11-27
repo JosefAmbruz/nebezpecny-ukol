@@ -85,6 +85,22 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 8)
 layout_mode = 2
 
+[node name="DifficultyRow" type="HBoxContainer" parent="Center/Content"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 12
+
+[node name="DifficultyLabel" type="Label" parent="Center/Content/DifficultyRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.73, 0.78, 0.75, 1)
+theme_override_font_sizes/font_size = 18
+text = "Obtížnost"
+
+[node name="Difficulty" type="OptionButton" parent="Center/Content/DifficultyRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 36)
+layout_mode = 2
+
 [node name="Start" type="Button" parent="Center/Content"]
 custom_minimum_size = Vector2(260, 54)
 layout_mode = 2
@@ -131,12 +147,20 @@ bbcode_enabled = true
 fit_content = true
 scroll_active = false
 text = "[b]A / D nebo šipky[/b] | Pohyb. Myší se rozhlížej a pohledem odraď útočníka.
+[b]Shift[/b] | Sprint. Rychlejší, ale assassini si tě všimnou mnohem dřív.
 [b]Tab[/b] | Porovnej portréty s tvářemi v davu.
 [b]Drž levé tlačítko[/b] | Zblízka promluvíš nebo zaútočíš. Když se cíl otočí k tobě, pusť tlačítko.
 [b]E u stojanu[/b] | Opři se a na chvíli se chraň před útokem.
+[b]Q[/b] | Hoď minci ke kurzoru. Lidé v okolí se na chvíli otočí za zvukem a ty můžeš zaútočit zezadu nebo utéct.
 [b]F[/b] | Odraz útok, když se čas zpomalí a objeví se výzva.
-[b]Skóre[/b] | Assassin body přidá, civilista je ubere. Úkol je za bonus."
+[b]Svědci[/b] | Blízcí civilisté po útoku utečou a mohou upozornit assassiny. Na náměstí je rušněji, v parku klidněji. Když tě uvidí zabíjet, assassini tě chvíli hledají. Schovej se nebo přejdi do jiné čtvrti.
+[b]Povahy[/b] | Agresivní útočí rychle a nápadně, trpělivý vidí dál a dlouho sleduje, zbabělý uteče, když se na něj podíváš.
+[b]Šalina[/b] | Občas přijede. Lidé přestoupí, může vystoupit i assassin a hluk na chvíli přehluší svědky.
+[b]Skóre[/b] | Assassin body přidá, civilista je ubere. Úkol je za bonus.
+[b]Kombo[/b] | Assassini za sebou bez chyby násobí body. Likvidace bez svědků dá bonus.
+[b]Obtížnost[/b] | Lehká: víc kartáčků a času na obranu. Těžká: víc assassinů, kratší zápas, rychlejší útoky."
 
+[connection signal="item_selected" from="Center/Content/DifficultyRow/Difficulty" to="." method="_on_difficulty_selected"]
 [connection signal="pressed" from="Center/Content/Start" to="." method="_on_start_pressed"]
 [connection signal="toggled" from="Center/Content/Actions/HowTo" to="." method="_on_how_to_toggled"]
 [connection signal="pressed" from="Center/Content/Actions/Quit" to="." method="_on_quit_pressed"]

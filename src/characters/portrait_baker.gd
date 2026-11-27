@@ -13,6 +13,9 @@ static func bake_portraits(
 ) -> void:
 	if characters.is_empty() or not is_instance_valid(host_node):
 		return
+	# Headless (testy) nerenderuje, frame_post_draw by nikdy nepřišel.
+	if DisplayServer.get_name() == "headless":
+		return
 
 	var viewport := SubViewport.new()
 	viewport.name = "PortraitBakerViewport"

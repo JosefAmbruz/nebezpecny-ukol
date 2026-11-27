@@ -1,13 +1,15 @@
-extends SceneTree
+extends Node
+
+# Run with godot --headless --path . res://tests/test_npc_target.tscn.
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	call_deferred("_run_test")
 
 
 func _run_test() -> void:
 	var npc := NpcBase.new()
-	root.add_child(npc)
+	get_tree().root.add_child(npc)
 	var target := NpcBase.new()
 	assert(npc._is_valid_attack_target(target))
 	npc._stalk_target = target
@@ -25,4 +27,4 @@ func _run_test() -> void:
 	assert(npc.state == NpcBase.State.WANDER and npc._stalk_target == null)
 	npc.free()
 	print("Freed attack targets are handled safely.")
-	quit()
+	get_tree().quit()

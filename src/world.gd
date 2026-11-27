@@ -1,7 +1,8 @@
 extends Node3D
 
-const DEFENSE_WINDOW_MS := 1500
 const DEFENSE_TIME_SCALE := 0.18
+## Od této části zápasu assassini postupně přitvrzují.
+const LATE_PRESSURE_START := 0.6
 
 @export var appearance_pool: AppearancePool = preload("res://src/characters/default_appearance_pool.tres")
 @export var total_assassins: int = 8
@@ -13,6 +14,10 @@ const DEFENSE_TIME_SCALE := 0.18
 @export var score_assassin_kill: int = 100
 @export var score_civilian_penalty: int = -50
 @export var score_quest_bonus: int = 300
+@export var score_silent_bonus: int = 50
+## Každý další assassin v řadě bez chyby přidá k násobiči tuto hodnotu.
+@export var combo_step: float = 0.5
+@export var max_combo_multiplier: float = 3.0
 
 @export_group("Camera")
 @export var camera_half_width: float = 6.0
@@ -34,6 +39,7 @@ const DEFENSE_TIME_SCALE := 0.18
 @export var sfx_quest_progress: AudioStream
 @export var sfx_list_toggle: AudioStream
 @export var sfx_player_killed: AudioStream
+@export var sfx_tram: AudioStream = preload("res://assets/sfx/freesound_community-street-distant-tram-noise-28842.mp3")
 
 @onready var _player: Player = $Player
 @onready var _player_camera: Camera3D = $Player/Camera3D
@@ -62,18 +68,34 @@ var _assassinate_start_cam_pos: Vector3 = Vector3.ZERO
 
 var _elapsed_time: float = 0.0
 var _score: int = 0
+var _assassins_eliminated: int = 0
 var _broken_toothbrushes: int = 0
 var _quest_completed: bool = false
+var _kill_streak: int = 0
+var _best_streak: int = 0
+var _silent_kills: int = 0
 var _match_ended: bool = false
 var _defense_attacker: NpcBase
 var _defense_deadline_ms: int = 0
 var _normal_time_scale: float = 1.0
+var _defense_window_ms: int = 1500
+
+
+func _init() -> void:
+	var preset := Difficulty.get_preset()
+	total_assassins = preset["total_assassins"]
+	match_duration_seconds = preset["match_duration_seconds"]
+	max_toothbrushes = preset["max_toothbrushes"]
+	_defense_window_ms = preset["defense_window_ms"]
 
 
 func _ready() -> void:
 	for child in _levels_root.get_children():
 		if child is LevelZone:
 			_levels.append(child)
+	_player.reaction_grace_time = Difficulty.get_preset()["reaction_grace_time"]
+	_player.distractions_left = Difficulty.get_preset()["distractions"]
+	NpcBase.late_pressure = 0.0
 	_levels.sort_custom(func(a: LevelZone, b: LevelZone) -> bool: return a.level_id < b.level_id)
 
 	if not _levels.is_empty():
@@ -89,8 +111,12 @@ func _ready() -> void:
 	_director.npc_died.connect(_on_npc_died)
 	_director.quest_npc_interacted.connect(_on_quest_npc_interacted)
 	_director.level_activated.connect(_on_level_activated)
+	_director.rival_found_battery.connect(_on_rival_found_battery)
+	_director.tram_arrived.connect(_on_tram_arrived)
 	_player.defense_requested.connect(_start_defense)
 	_player.killed_by_assassin.connect(_on_player_killed)
+	_player.assassination_spotted.connect(_break_combo)
+	_player.distraction_thrown.connect(func(_point: Vector3, left: int) -> void: _game_hud.set_distractions(left))
 	_player.lean_state_changed.connect(_on_player_lean_state_changed)
 	_player.interaction_started.connect(_on_player_interaction_started)
 	_player.interaction_progress_changed.connect(_on_player_interaction_progress_changed)
@@ -127,6 +153,7 @@ func _start_match() -> void:
 
 	if _game_hud:
 		_game_hud.set_toothbrushes(max_toothbrushes, _broken_toothbrushes)
+		_game_hud.set_distractions(_player.distractions_left)
 
 	_director.initialize(
 		_levels,
@@ -173,9 +200,10 @@ func _process(delta: float) -> void:
 		if remaining_ms <= 0:
 			_finish_defense(false)
 		else:
-			_game_hud.set_defense_progress(float(remaining_ms) / DEFENSE_WINDOW_MS)
+			_game_hud.set_defense_progress(float(remaining_ms) / _defense_window_ms)
 		return
 	_update_match_clock(delta)
+	_game_hud.set_heat(_player.heat_time_left)
 
 
 func _input(event: InputEvent) -> void:
@@ -187,6 +215,8 @@ func _input(event: InputEvent) -> void:
 
 
 func _exit_tree() -> void:
+	NpcBase.late_pressure = 0.0
+	NpcBase.noise_cover_until_msec = 0
 	if _defense_deadline_ms != 0:
 		Engine.time_scale = _normal_time_scale
 
@@ -197,7 +227,7 @@ func _start_defense(attacker: NpcBase) -> void:
 			attacker.visuals.cancel_attack_windup()
 		return
 	_defense_attacker = attacker
-	_defense_deadline_ms = Time.get_ticks_msec() + DEFENSE_WINDOW_MS
+	_defense_deadline_ms = Time.get_ticks_msec() + _defense_window_ms
 	_normal_time_scale = Engine.time_scale
 	Engine.time_scale *= DEFENSE_TIME_SCALE
 	_player.set_movement_locked(true)
@@ -224,6 +254,8 @@ func _finish_defense(defended: bool) -> void:
 	_game_hud.finish_defense_prompt(defended)
 	if attacker_active:
 		attacker.set_physics_process(true)
+		if defended:
+			attacker.stun_after_defense(_player)
 		if attacker.visuals:
 			if defended:
 				attacker.visuals.cancel_attack_windup()
@@ -318,6 +350,7 @@ func _update_camera_clamp(delta: float) -> void:
 		return
 
 	if _is_assassinating and not _is_list_open:
+		var cursor_point := _player.get_cursor_world_point()
 		# Kubická ease-out křivka: rychlý dramatický nástup na oběť, ke konci zpomaluje
 		var eased := 1.0 - pow(1.0 - _assassinate_progress, 3.0)
 		_player_camera.size = lerpf(_camera_base_size, _camera_base_size * assassinate_zoom_factor, eased)
@@ -328,6 +361,7 @@ func _update_camera_clamp(delta: float) -> void:
 			cam_pos.x = lerpf(_assassinate_start_cam_pos.x, victim_pos.x, eased)
 			cam_pos.y = lerpf(_assassinate_start_cam_pos.y, victim_pos.y + assassinate_focus_y_offset, eased)
 			_player_camera.global_position = cam_pos
+		_player_camera.global_position += cursor_point - _player.get_cursor_world_point()
 		return
 
 	var target_world_x: float
@@ -359,8 +393,12 @@ func _update_camera_clamp(delta: float) -> void:
 func _update_match_clock(delta: float) -> void:
 	_elapsed_time += delta
 	var progress := clampf(_elapsed_time / maxf(1.0, match_duration_seconds), 0.0, 1.0)
+	var was_calm := NpcBase.late_pressure == 0.0
+	NpcBase.late_pressure = clampf((progress - LATE_PRESSURE_START) / (1.0 - LATE_PRESSURE_START), 0.0, 1.0)
 	if _game_hud:
 		_game_hud.set_clock_progress(progress)
+		if was_calm and NpcBase.late_pressure > 0.0:
+			_game_hud.show_event("Blíží se 19:00. Assassini znervózněli a útočí odvážněji.")
 
 	if _elapsed_time >= match_duration_seconds:
 		_end_match("Čas vypršel (19:00)", "Tvoje konečné skóre: %d" % _score)
@@ -368,6 +406,8 @@ func _update_match_clock(delta: float) -> void:
 
 func _on_level_activated(zone: LevelZone) -> void:
 	_active_zone = zone
+	# Nová čtvrť = noví lidé, kteří hráče neviděli.
+	_player.clear_heat()
 	if _game_hud:
 		_game_hud.set_level(zone.level_name, zone.level_id)
 	AudioManager.play_ambient(zone.ambient_stream)
@@ -378,6 +418,18 @@ func _on_level_activated(zone: LevelZone) -> void:
 		AudioManager.play_music(background_music)
 
 
+func _on_rival_found_battery(data: CharacterData, zone: LevelZone) -> void:
+	if not _match_ended and zone:
+		_game_hud.show_rival_battery(data.display_name, zone.level_name)
+
+
+func _on_tram_arrived(_zone: LevelZone) -> void:
+	if _match_ended:
+		return
+	AudioManager.play_sfx(sfx_tram)
+	_game_hud.show_event("Přijela šalina! Na %d s přehluší svědky. Pozor, kdo vystoupil." % roundi(_director.tram_noise_duration))
+
+
 func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 	if npc.character_data and npc.character_data.is_assassin and _assassin_list_ui:
 		_assassin_list_ui.mark_assassin_dead(npc.character_data.id)
@@ -385,10 +437,25 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 	var points := score_assassin_kill if npc.is_assassin else score_civilian_penalty
 	if killer == _player:
 		AudioManager.play_sfx(sfx_assassin_tag if npc.is_assassin else sfx_brush_break)
+		var notes := PackedStringArray()
+		if npc.is_assassin:
+			_kill_streak += 1
+			_best_streak = maxi(_best_streak, _kill_streak)
+			if _kill_streak > 1:
+				points = roundi(points * _combo_multiplier(_kill_streak))
+				notes.append("Kombo ×%s" % _format_multiplier(_combo_multiplier(_kill_streak)))
+			if npc.witness_count == 0:
+				points += score_silent_bonus
+				_silent_kills += 1
+				notes.append("Tiše +%d" % score_silent_bonus)
+		else:
+			_kill_streak = 0
 		_add_score(points)
 		if npc.visuals:
-			npc.visuals.show_score_popup(points)
-		if not npc.is_assassin:
+			npc.visuals.show_score_popup(points, " · ".join(notes))
+		if npc.is_assassin:
+			_assassins_eliminated += 1
+		else:
 			_broken_toothbrushes += 1
 			_game_hud.set_toothbrushes(max_toothbrushes, _broken_toothbrushes)
 			if _broken_toothbrushes >= max_toothbrushes:
@@ -472,8 +539,29 @@ func _format_leaderboard() -> String:
 
 func _add_score(delta_score: int) -> void:
 	_score += delta_score
-	if _game_hud:
-		_game_hud.set_score(_score)
+	_refresh_score_hud()
+
+
+func _break_combo() -> void:
+	_kill_streak = 0
+	_refresh_score_hud()
+
+
+## Násobič pro n-tého assassina v řadě: 1. ×1, 2. ×1.5, 3. ×2, ...
+func _combo_multiplier(streak: int) -> float:
+	return minf(1.0 + combo_step * maxi(0, streak - 1), max_combo_multiplier)
+
+
+func _format_multiplier(multiplier: float) -> String:
+	return ("%.1f" % multiplier).trim_suffix(".0")
+
+
+func _refresh_score_hud() -> void:
+	if not _game_hud:
+		return
+	# HUD ukazuje násobič, který dostane příští likvidace
+	var combo := "" if _kill_streak == 0 else "Další ×%s" % _format_multiplier(_combo_multiplier(_kill_streak + 1))
+	_game_hud.set_score(_score, combo)
 
 
 func _end_match(title: String, summary: String, death_animation: Tween = null) -> void:
@@ -487,4 +575,7 @@ func _end_match(title: String, summary: String, death_animation: Tween = null) -
 	if death_animation:
 		await death_animation.finished
 	if _game_hud:
-		_game_hud.show_end_screen(title, summary, _format_leaderboard())
+		var results := "%s\nVyřazení assassini: %d\nTiché likvidace: %d\nNejdelší kombo: %d\nZasažení civilisté: %d\nÚkol: %s" % [
+			summary, _assassins_eliminated, _silent_kills, _best_streak, _broken_toothbrushes, "splněn" if _quest_completed else "nesplněn"
+		]
+		_game_hud.show_end_screen(title, results, _format_leaderboard())

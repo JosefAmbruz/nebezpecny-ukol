@@ -66,5 +66,5 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_hint")
 [node name="Text" type="Label" parent="Controls" unique_id=1794708752]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.82, 0.87, 0.86, 1)
-text = "A / D  Pohyb     |     Myš  Pohled     |     Drž levé tlačítko  Akce"
+text = "A / D  Pohyb     |     Shift  Sprint (nápadný)     |     Q  Mince     |     Myš  Pohled     |     Drž levé tlačítko  Akce"
 horizontal_alignment = 1

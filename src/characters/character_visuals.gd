@@ -149,6 +149,8 @@ func _pose_segment(segment: MeshInstance3D, start: Vector2, end: Vector2) -> voi
 	segment.position = Vector3(center.x, center.y, segment.position.z)
 	segment.rotation.z = atan2(-direction.x, direction.y)
 	segment.scale.y = direction.length() + 0.045
+	if segment == _forearms[0]:
+		balloon_anchor.position = Vector3(end.x, end.y, segment.position.z)
 
 
 func _apply_appearance() -> void:
@@ -228,13 +230,12 @@ func look_forward() -> void:
 	_target_yaw = 0.0
 	_target_pitch = 0.0
 
-## Nastaví směr těla (pro 2D sidescroller vlevo/vpravo) překlopením BodyPivotu včetně BalloonAnchoru
+## Nastaví směr těla pro 2D sidescroller.
 func set_facing_right(right: bool) -> void:
 	if _facing_right == right:
 		return
 	_facing_right = right
 	_torso.flip_h = not right
-	balloon_anchor.position.x = absf(balloon_anchor.position.x) * (1.0 if right else -1.0)
 
 
 func get_balloon_anchor() -> Marker3D:
@@ -386,10 +387,10 @@ func play_death(attacker: Node3D) -> Tween:
 	return tween
 
 
-func show_score_popup(points: int) -> void:
+func show_score_popup(points: int, note: String = "") -> void:
 	var popup := Label3D.new()
 	popup.name = "ScorePopup"
-	popup.text = "%+d" % points
+	popup.text = "%+d" % points if note.is_empty() else "%+d\n%s" % [points, note]
 	popup.font_size = 42
 	popup.outline_size = 10
 	popup.pixel_size = 0.009

@@ -90,6 +90,12 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.81, 0.86, 0.85, 1)
 text = "Start"
 
+[node name="DistractionLabel" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.4, 1)
+text = "[Q] Mince: 3"
+
 [node name="Divider" type="HSeparator" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
@@ -104,6 +110,34 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.91, 1, 1)
 text = "Náměstí"
+
+[node name="BalloonWarning" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.78, 0.54, 1)
+text = "Balónek přitahuje assassiny."
+autowrap_mode = 2
+
+[node name="RivalEvent" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.48, 1)
+autowrap_mode = 2
+
+[node name="HeatWarning" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.45, 0.4, 1)
+autowrap_mode = 2
+
+[node name="EventLabel" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.62, 0.52, 1)
+autowrap_mode = 2
 
 [node name="QuestItemsRow" type="HBoxContainer" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true

@@ -9,6 +9,7 @@ enum State {
 	EVADE,
 	FLEE,
 	DEAD,
+	STUNNED,
 }
 
 signal died(npc: NpcBase, killer: Node3D)
@@ -17,6 +18,7 @@ signal fled_level(npc: NpcBase, exit_side: int) # -1 = vlevo, +1 = vpravo
 const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.tscn")
 const WITNESS_RANGE := 6.0
 const STALK_TIME_LIMIT := 8.0
+const DEFENSE_STUN_DURATION := 3.0
 
 @export var visuals: CharacterVisuals
 @export var interactable: InteractableNpc
@@ -62,7 +64,22 @@ const STALK_TIME_LIMIT := 8.0
 @export var stalk_trigger_chance_per_sec: float = 0.14
 @export var balloon_detect_multiplier: float = 2.5
 @export var balloon_detect_range_multiplier: float = 1.8
+@export var sprint_detect_multiplier: float = 2.5
+## Hráč, kterého viděli zabíjet (rozruch), je nápadnější a vidět ho je z větší dálky.
+@export var heat_detect_multiplier: float = 3.0
+@export var heat_detect_range_multiplier: float = 1.5
 @export var post_abort_cooldown: float = 4.0
+## Zbabělý assassin uteče s touto šancí za sekundu, když se na něj cíl dívá.
+@export var skittish_flee_chance_per_sec: float = 0.8
+## Při plném tlaku závěru zápasu se šance začít stopovat násobí touto hodnotou.
+@export var late_stalk_multiplier: float = 2.0
+## Při plném tlaku se nabíjení útoku zrychlí o tento podíl.
+@export var late_attack_speedup: float = 0.4
+
+## Tlak závěru zápasu 0..1. Nastavuje World podle hodin; sdílí ho všechna NPC.
+static var late_pressure: float = 0.0
+## Do tohoto času (Time.get_ticks_msec) hluk šaliny přehlušuje svědky.
+static var noise_cover_until_msec: int = 0
 
 var state: State = State.WANDER
 var has_balloon: bool = false:
@@ -93,11 +110,19 @@ var _lean_timer: float = 0.0
 var _stalk_target: Node3D = null
 var _stalk_pause_timer: float = 0.0
 var _stalk_time_left: float = 0.0
+var _stalk_time_limit: float = STALK_TIME_LIMIT
+var _stalk_speed_factor: float = 0.95
 var _attack_elapsed: float = 0.0
 var _attack_cooldown: float = 0.0
 var _evade_timer: float = 0.0
 var _evade_target_x: float = 0.0
 var _flee_exit_side: int = 1
+var _witness_reaction_tween: Tween
+var _stun_time_left: float = 0.0
+## Počet civilistů, kteří viděli smrt tohoto NPC (platí až po smrti).
+var witness_count: int = 0
+var _distract_time_left: float = 0.0
+var _distract_point_x: float = 0.0
 
 
 func _ready() -> void:
@@ -107,6 +132,11 @@ func _ready() -> void:
 	add_to_group(&"npcs")
 	if is_assassin:
 		add_to_group(&"assassins")
+		var preset := Difficulty.get_preset()
+		detect_range *= preset["detect_range_mult"]
+		stalk_trigger_chance_per_sec *= preset["stalk_chance_mult"]
+		attack_duration *= preset["attack_duration_mult"]
+		_apply_personality()
 
 	if visuals and appearance:
 		visuals.appearance = appearance
@@ -166,21 +196,26 @@ func _physics_process(delta: float) -> void:
 	if _attack_cooldown > 0.0:
 		_attack_cooldown = maxf(0.0, _attack_cooldown - delta)
 
-	match state:
-		State.WANDER:
-			_process_wander(delta)
-			if is_assassin:
-				_try_acquire_stalk_target(delta)
-		State.LEAN:
-			_process_lean(delta)
-		State.STALK:
-			_process_stalk(delta)
-		State.ATTACK:
-			_process_attack(delta)
-		State.EVADE:
-			_process_evade(delta)
-		State.FLEE:
-			_process_flee(delta)
+	if _distract_time_left > 0.0 and state in [State.WANDER, State.LEAN, State.STALK]:
+		_process_distraction(delta)
+	else:
+		match state:
+			State.WANDER:
+				_process_wander(delta)
+				if is_assassin:
+					_try_acquire_stalk_target(delta)
+			State.LEAN:
+				_process_lean(delta)
+			State.STALK:
+				_process_stalk(delta)
+			State.ATTACK:
+				_process_attack(delta)
+			State.EVADE:
+				_process_evade(delta)
+			State.FLEE:
+				_process_flee(delta)
+			State.STUNNED:
+				_process_stun(delta)
 
 	velocity.z = 0.0
 	move_and_slide()
@@ -225,6 +260,10 @@ func _process_wander(delta: float) -> void:
 		velocity.x = 0.0
 		_idle_timer = randf_range(idle_time_range.x, idle_time_range.y)
 		_reset_glance_timer()
+		if not is_assassin and randf() < 0.3:
+			var player := get_tree().get_first_node_in_group(&"player") as Player
+			if is_instance_valid(player) and player.is_alive and absf(player.global_position.x - global_position.x) <= detect_range:
+				_looking_right = player.global_position.x >= global_position.x
 	else:
 		_move_horizontally(signf(dist), walk_speed * _wander_speed_factor)
 
@@ -294,15 +333,34 @@ func _reset_glance_timer() -> void:
 
 #region Assassin AI (Stalk, Attack, Flee)
 
+func _get_personality() -> CharacterData.Personality:
+	return character_data.personality if character_data else CharacterData.Personality.NONE
+
+
+func _apply_personality() -> void:
+	match _get_personality():
+		CharacterData.Personality.AGGRESSIVE:
+			stalk_trigger_chance_per_sec *= 1.8
+			attack_duration *= 0.8
+			post_abort_cooldown *= 0.5
+			_stalk_speed_factor = 1.25
+		CharacterData.Personality.PATIENT:
+			stalk_trigger_chance_per_sec *= 0.7
+			detect_range *= 1.25
+			_stalk_time_limit *= 2.0
+		CharacterData.Personality.SKITTISH:
+			attack_duration *= 1.2
+
+
 func alert_to_stalk(target: Node3D) -> bool:
-	if not is_assassin or state in [State.DEAD, State.FLEE, State.ATTACK] or _attack_cooldown > 0.0 or _is_in_passive_immunity_zone():
+	if not is_assassin or state in [State.DEAD, State.FLEE, State.ATTACK, State.STUNNED] or _attack_cooldown > 0.0 or _is_in_passive_immunity_zone():
 		return false
 	if not _is_valid_attack_target(target) or _target_is_safe(target):
 		return false
 	_exit_lean()
 	_stalk_target = target
-	_stalk_pause_timer = 0.0
-	_stalk_time_left = STALK_TIME_LIMIT
+	_stalk_pause_timer = 0.7
+	_stalk_time_left = _stalk_time_limit
 	state = State.STALK
 	return true
 
@@ -319,16 +377,36 @@ func _try_acquire_stalk_target(delta: float) -> void:
 			if target == self or not _is_valid_attack_target(target):
 				continue
 			var distance := absf(target.global_position.x - global_position.x)
-			if distance > detect_range or _target_is_safe(target):
+			var target_range := _detect_range_for(target)
+			if distance > target_range or _target_is_safe(target):
 				continue
-			var rate := stalk_trigger_chance_per_sec * lerpf(1.0, 0.4, distance / detect_range)
+			var rate := stalk_trigger_chance_per_sec * lerpf(1.0, 0.4, distance / target_range)
+			rate *= lerpf(1.0, late_stalk_multiplier, late_pressure)
 			if target.get(&"has_balloon") == true:
 				rate *= balloon_detect_multiplier
+			if target.get(&"is_sprinting") == true:
+				rate *= sprint_detect_multiplier
+			if _is_hunted(target):
+				rate *= heat_detect_multiplier
 			if rate > best_rate:
 				best_target = target
 				best_rate = rate
 	if best_target and randf() < 1.0 - exp(-best_rate * delta):
 		alert_to_stalk(best_target)
+
+
+func _detect_range_for(target: Node3D) -> float:
+	var target_range := detect_range
+	if target.get(&"has_balloon") == true:
+		target_range *= maxf(1.0, balloon_detect_range_multiplier)
+	if _is_hunted(target):
+		target_range *= maxf(1.0, heat_detect_range_multiplier)
+	return target_range
+
+
+func _is_hunted(target: Node3D) -> bool:
+	var heat: Variant = target.get(&"heat_time_left")
+	return heat != null and heat > 0.0
 
 
 func _process_stalk(delta: float) -> void:
@@ -339,11 +417,21 @@ func _process_stalk(delta: float) -> void:
 	var dist_x := _stalk_target.global_position.x - global_position.x
 	var abs_dist := absf(dist_x)
 	_stalk_time_left -= delta
-	if _stalk_time_left <= 0.0 or abs_dist > detect_range * 1.6 or _target_is_safe(_stalk_target):
+	var target_range := _detect_range_for(_stalk_target)
+	if _stalk_time_left <= 0.0 or abs_dist > target_range * 1.6 or _target_is_safe(_stalk_target):
 		_abort_attack()
 		return
 
+	if _stalk_pause_timer > 0.0:
+		velocity.x = 0.0
+		_looking_right = dist_x >= 0.0
+		_stalk_pause_timer -= delta
+		return
+
 	if _target_is_looking_at_me(_stalk_target):
+		if _get_personality() == CharacterData.Personality.SKITTISH and _stalk_target is Player and randf() < 1.0 - exp(-skittish_flee_chance_per_sec * delta):
+			_enter_flee()
+			return
 		velocity.x = 0.0
 		_looking_right = dist_x < 0.0
 		if abs_dist < attack_range * 0.8:
@@ -358,13 +446,8 @@ func _process_stalk(delta: float) -> void:
 		return
 
 	# Simuluje nenápadnou chůzi (občas krátce zastaví), ale postupně se přibližuje
-	if _stalk_pause_timer > 0.0:
-		velocity.x = 0.0
-		_stalk_pause_timer -= delta
-		return
-
 	if abs_dist > attack_range * 0.75:
-		_move_horizontally(signf(dist_x), walk_speed * 0.95)
+		_move_horizontally(signf(dist_x), walk_speed * _stalk_speed_factor)
 		if randf() < 0.25 * delta:
 			_stalk_pause_timer = randf_range(0.4, 1.0)
 	else:
@@ -392,7 +475,7 @@ func _process_attack(delta: float) -> void:
 
 	velocity.x = 0.0
 	_looking_right = dist_x >= 0.0
-	_attack_elapsed += delta
+	_attack_elapsed += delta * (1.0 + late_attack_speedup * late_pressure)
 	if visuals:
 		var charge := clampf(_attack_elapsed / maxf(0.05, attack_duration), 0.0, 1.0)
 		visuals.prepare_attack(_stalk_target, charge * 0.84)
@@ -417,6 +500,39 @@ func _abort_attack(keep_attack_pose: bool = false) -> void:
 	_attack_cooldown = post_abort_cooldown
 	state = State.WANDER
 	_pick_new_wander_target()
+
+
+func stun_after_defense(player: Player) -> void:
+	state = State.STUNNED
+	_stun_time_left = DEFENSE_STUN_DURATION
+	_attack_cooldown = maxf(_attack_cooldown, DEFENSE_STUN_DURATION + 1.0)
+	velocity.x = 0.0
+	_looking_right = player.global_position.x < global_position.x
+	_show_reaction("Otřesený!", DEFENSE_STUN_DURATION)
+
+
+func _process_stun(delta: float) -> void:
+	velocity.x = 0.0
+	_stun_time_left -= delta
+	if _stun_time_left <= 0.0:
+		state = State.WANDER
+		_pick_new_wander_target()
+
+
+## Hozená mince: NPC se na chvíli zastaví a dívá se k místu dopadu.
+func distract(point_x: float, duration: float) -> void:
+	if state not in [State.WANDER, State.LEAN, State.STALK]:
+		return
+	_distract_time_left = duration
+	_distract_point_x = point_x
+	_camera_glance_time_left = 0.0
+	_show_reaction("?", duration)
+
+
+func _process_distraction(delta: float) -> void:
+	_distract_time_left -= delta
+	velocity.x = 0.0
+	_looking_right = _distract_point_x >= global_position.x
 
 
 func _evade_danger(danger_x: float) -> void:
@@ -504,7 +620,7 @@ func is_safe_from_attack() -> bool:
 
 
 func is_looking_at(target: Node3D) -> bool:
-	if not is_instance_valid(target):
+	if state == State.STUNNED or not is_instance_valid(target):
 		return false
 	var target_is_right := target.global_position.x >= global_position.x
 	return target_is_right == _looking_right
@@ -525,6 +641,11 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 	if kind == InteractableNpc.InteractionKind.ASSASSINATE:
 		if _is_leaning:
 			_exit_lean()
+		if _witness_reaction_tween and _witness_reaction_tween.is_valid():
+			_witness_reaction_tween.kill()
+		var reaction := get_node_or_null("WitnessReaction") as Label3D
+		if reaction:
+			reaction.hide()
 		state = State.DEAD
 		velocity = Vector3.ZERO
 		has_balloon = false
@@ -535,17 +656,42 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 			visuals.play_death(actor)
 		if voice_death:
 			AudioManager.play_sfx(voice_death, 0.0, 0.06)
+		witness_count = _startle_nearby_civilians()
 		died.emit(self, actor)
-		_startle_nearby_civilians()
-		if not is_assassin and actor and actor.is_in_group(&"player"):
+		if witness_count > 0 and actor is Player:
+			actor.raise_heat()
 			_alert_nearby_assassins(actor)
 
 
-func _startle_nearby_civilians() -> void:
+func _startle_nearby_civilians() -> int:
+	if Time.get_ticks_msec() < noise_cover_until_msec:
+		return 0
+	var witnesses := 0
 	for node in get_tree().get_nodes_in_group(&"npcs"):
 		var witness := node as NpcBase
-		if witness and not witness.is_queued_for_deletion() and absf(witness.global_position.x - global_position.x) <= WITNESS_RANGE:
+		if witness and not witness.is_assassin and witness.state != State.DEAD and not witness.is_queued_for_deletion() and absf(witness.global_position.x - global_position.x) <= WITNESS_RANGE:
 			witness._evade_danger(global_position.x)
+			witness._show_witness_reaction()
+			witnesses += 1
+	return witnesses
+
+
+func _show_witness_reaction() -> void:
+	_show_reaction("Pomoc!", 2.0)
+	if voice_flee and _voice_player:
+		AudioManager.try_play_crowd_voice_3d(_voice_player, voice_flee, 1.5)
+
+
+func _show_reaction(message: String, duration: float) -> void:
+	var label := get_node_or_null("WitnessReaction") as Label3D
+	if label:
+		if _witness_reaction_tween and _witness_reaction_tween.is_valid():
+			_witness_reaction_tween.kill()
+		label.text = message
+		label.show()
+		_witness_reaction_tween = create_tween()
+		_witness_reaction_tween.tween_interval(duration)
+		_witness_reaction_tween.tween_callback(label.hide)
 
 
 func _alert_nearby_assassins(player_node: Node3D) -> void:
@@ -600,7 +746,7 @@ func _move_horizontally(dir: float, speed: float) -> void:
 
 
 func _update_head_look_variety(delta: float) -> void:
-	if state in [State.ATTACK, State.EVADE, State.FLEE, State.DEAD]:
+	if state in [State.ATTACK, State.EVADE, State.FLEE, State.DEAD, State.STUNNED]:
 		_camera_glance_time_left = 0.0
 		_vertical_look_offset = 0.0
 		return

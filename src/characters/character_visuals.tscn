@@ -132,7 +132,7 @@ transform = Transform3D(7.54979e-08, 1, 0, -1, 7.54979e-08, 0, 0, 0, 1, 0.13, 0.
 mesh = SubResource("Mesh_foot")
 
 [node name="BalloonAnchor" type="Marker3D" parent="BodyRig" unique_id=2047666363]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.44141692, 0.54948056, -0.6943695)
+position = Vector3(-0.28, 0.34, -0.055)
 
 [node name="HeadPivot" type="Marker3D" parent="." unique_id=54102647]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.72800577, 0)

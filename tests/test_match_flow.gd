@@ -1,38 +1,40 @@
-extends SceneTree
+extends Node
 
-# Run with godot --path . --script res://tests/test_match_flow.gd.
+# Run with godot --headless --path . res://tests/test_match_flow.tscn.
 const WORLD := preload("res://src/world.gd")
 
 
-func _initialize() -> void:
+func _ready() -> void:
 	_run_test.call_deferred()
 
 
 func _run_test() -> void:
-	create_timer(30.0).timeout.connect(quit.bind(1))
-	assert(change_scene_to_file(ProjectSettings.get_setting("application/run/main_scene")) == OK)
-	await scene_changed
-	assert(current_scene.name == &"TitleScreen")
-	var how_to := current_scene.get_node("%HowTo") as Button
-	var instructions := current_scene.get_node("%HowToContent") as Control
+	get_tree().create_timer(30.0).timeout.connect(get_tree().quit.bind(1))
+	# Testovací uzel nesmí být current_scene, jinak by ho change_scene uvolnil.
+	get_tree().current_scene = null
+	assert(get_tree().change_scene_to_file(ProjectSettings.get_setting("application/run/main_scene")) == OK)
+	await get_tree().scene_changed
+	assert(get_tree().current_scene.name == &"TitleScreen")
+	var how_to := get_tree().current_scene.get_node("%HowTo") as Button
+	var instructions := get_tree().current_scene.get_node("%HowToContent") as Control
 	assert(not instructions.visible)
 	how_to.grab_focus()
 	await _press_key(KEY_ENTER)
-	await process_frame
+	await get_tree().process_frame
 	assert(instructions.visible)
 	await _press_key(KEY_ENTER)
-	await process_frame
+	await get_tree().process_frame
 	assert(not instructions.visible)
-	current_scene.get_node("Center/Content/Start").grab_focus()
+	get_tree().current_scene.get_node("Center/Content/Start").grab_focus()
 	await _press_key(KEY_ENTER)
 	var world := await _wait_for_match()
 	var shin := world._player.visuals.get_node("BodyRig/FrontShin") as MeshInstance3D
 	var rest_pose := shin.transform
 	Input.action_press(&"move_right")
-	await create_timer(0.16).timeout
+	await get_tree().create_timer(0.16).timeout
 	Input.action_release(&"move_right")
 	assert(not shin.transform.is_equal_approx(rest_pose))
-	await create_timer(0.16).timeout
+	await get_tree().create_timer(0.16).timeout
 	assert(shin.transform.is_equal_approx(rest_pose))
 	var visuals := world._player.visuals
 	var back_arm := visuals.get_node("BodyRig/BackForearm") as MeshInstance3D
@@ -51,9 +53,10 @@ func _run_test() -> void:
 	assert(foot.position.y > 0.12)
 	visuals._pose_walk(0.0, 0.0, 1.0)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Náměstí | Jdi doprava")
+	assert(world._game_hud.get_node("%BalloonWarning").visible)
 	world._player.position.x = 0.0
-	await physics_frame
-	await physics_frame
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	assert(not world._player.is_safe_from_attack())
 
 	var killer := OffScreenDirector.NPC_BASE_SCENE.instantiate() as NpcBase
@@ -86,17 +89,21 @@ func _run_test() -> void:
 	scored_victim.died.connect(world._director._on_npc_died)
 	scored_victim.interactable.complete_interaction(world._player)
 	var reward := scored_victim.visuals.get_node("ScorePopup") as Label3D
-	assert(reward.text == "+100" and reward.modulate.g > reward.modulate.r)
-	assert(world._score == 50)
+	# Bez svědků dostane hráč bonus za tichou likvidaci.
+	var reward_points := 100 + (world.score_silent_bonus if scored_victim.witness_count == 0 else 0)
+	assert(reward.text.begins_with("%+d" % reward_points) and reward.modulate.g > reward.modulate.r)
+	assert(world._score == reward_points - 50)
 	world._director.activate_level(1)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Náměstí | Jsi na místě")
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.MADRINA_METTICULOSA)
+	assert("Pozor" in world._game_hud.get_node("%BalloonWarning").text)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Park | Jdi doprava")
 	world._director.activate_level(2)
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.PADRINO_MORETTI)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Start | Jdi doleva")
 	world._director.activate_level(0)
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.PADRINO_PACATO)
+	assert(not world._game_hud.get_node("%BalloonWarning").visible)
 	assert(not world._game_hud.get_node("%QuestRoute").visible)
 	world._assassin_list_ui.toggle_list()
 	killer.position = world._player.position + Vector3(-1.0, 0.0, 0.0)
@@ -114,7 +121,7 @@ func _run_test() -> void:
 	assert(wrist.is_equal_approx(grip.global_position))
 	killer._process_attack(killer.attack_duration)
 	assert(grip.visible and handle.visible and handle.scale.x < 0.5)
-	assert(world._player.is_alive and world._player.movement_locked and not paused)
+	assert(world._player.is_alive and world._player.movement_locked and not get_tree().paused)
 	assert(Engine.time_scale < 1.0 and world._game_hud.get_node("%DefensePanel").visible)
 	var match_time := world._elapsed_time
 	await _press_key(KEY_E)
@@ -123,7 +130,7 @@ func _run_test() -> void:
 	assert(world._player_camera.size < world._camera_base_size * 0.5)
 	assert(world._defense_deadline_ms != 0 and world._elapsed_time == match_time)
 	await _press_key(KEY_F)
-	await process_frame
+	await get_tree().process_frame
 	assert(Engine.time_scale == 1.0 and world._defense_deadline_ms == 0)
 	assert(world._player.is_alive and world._assassin_list_ui.visible)
 	assert(world._game_hud.get_node("%DefenseLabel").text == "Útok odražen")
@@ -138,26 +145,26 @@ func _run_test() -> void:
 	killer._process_attack(killer.attack_duration)
 	var deadline := world._defense_deadline_ms
 	assert(deadline != 0)
-	while not paused:
-		await process_frame
+	while not get_tree().paused:
+		await get_tree().process_frame
 	assert(Time.get_ticks_msec() >= deadline and Engine.time_scale == 1.0)
-	assert(paused and not world._player.can_process() and not world._director.can_process())
+	assert(get_tree().paused and not world._player.can_process() and not world._director.can_process())
 	assert(not world._assassin_list_ui.visible)
 	var end_panel := world._game_hud.get_node("%EndGamePanel") as Control
 	assert(not end_panel.visible)
-	await create_timer(0.09).timeout
+	await get_tree().create_timer(0.09).timeout
 	assert(handle.visible and is_equal_approx(handle.scale.x, 1.0))
 	await end_panel.visibility_changed
-	await process_frame
+	await get_tree().process_frame
 	assert(not killer.visuals.get_node("Toothbrush").visible)
 	assert(absf(world._player.visuals.rotation_degrees.z) >= 75.0)
 	assert(absf(civilian.visuals.rotation_degrees.z) >= 75.0)
 	assert(world._game_hud.get_node("%EndTitleLabel").text == "Byl jsi zabit")
-	assert(world._game_hud.get_node("%LeaderboardRows").text == "1. Ty — 350\n2. %s — 200" % killer.display_name)
+	assert(world._game_hud.get_node("%LeaderboardRows").text == "1. Ty — %d\n2. %s — 200" % [reward_points + 250, killer.display_name])
 	var position := world._player.position
 	Input.action_press(&"move_right")
-	await physics_frame
-	await physics_frame
+	await get_tree().physics_frame
+	await get_tree().physics_frame
 	Input.action_release(&"move_right")
 	assert(world._player.position == position)
 	if is_instance_valid(penalty):
@@ -167,7 +174,7 @@ func _run_test() -> void:
 	var previous_id := world.get_instance_id()
 	await _press_key(KEY_ENTER)
 	world = await _wait_for_match(previous_id)
-	assert(not paused)
+	assert(not get_tree().paused)
 	assert(world._player.is_alive and world._score == 0)
 	assert(not world.assassins[0].has_killed and world.assassins[0].kill_score == 0)
 
@@ -177,7 +184,7 @@ func _run_test() -> void:
 	for i in range(3):
 		var civilian_target := world._director._active_civilians[0]
 		civilian_target.interactable.complete_interaction(world._player)
-	assert(world._broken_toothbrushes == 3 and paused)
+	assert(world._broken_toothbrushes == 3 and get_tree().paused)
 	assert(world._game_hud.get_node("%EndTitleLabel").text == "Zlomil jsi všechny kartáčky!")
 	assert(world._game_hud.get_node("%Leaderboard").is_visible_in_tree())
 	previous_id = world.get_instance_id()
@@ -187,10 +194,10 @@ func _run_test() -> void:
 	assassin.has_killed = true
 	assassin.kill_score = 100
 	world._update_match_clock(world.match_duration_seconds)
-	assert(paused and world._game_hud.get_node("%Leaderboard").is_visible_in_tree())
+	assert(get_tree().paused and world._game_hud.get_node("%Leaderboard").is_visible_in_tree())
 	assert(world._game_hud.get_node("%LeaderboardRows").text == "1. %s — 100\n2. Ty — 0" % assassin.display_name)
 	print("Onboarding, combat, defense success and timeout, results, and restarts passed.")
-	quit()
+	get_tree().quit()
 
 
 func _press_key(key: Key) -> void:
@@ -199,7 +206,7 @@ func _press_key(key: Key) -> void:
 	event.physical_keycode = key
 	event.pressed = true
 	Input.parse_input_event(event)
-	await process_frame
+	await get_tree().process_frame
 	event = event.duplicate()
 	event.pressed = false
 	Input.parse_input_event(event)
@@ -207,9 +214,9 @@ func _press_key(key: Key) -> void:
 
 func _wait_for_match(previous_id: int = 0) -> WORLD:
 	while (
-		not current_scene is WORLD
-		or current_scene.get_instance_id() == previous_id
-		or current_scene._director.active_level_id < 0
+		not get_tree().current_scene is WORLD
+		or get_tree().current_scene.get_instance_id() == previous_id
+		or get_tree().current_scene._director.active_level_id < 0
 	):
-		await process_frame
-	return current_scene as WORLD
+		await get_tree().process_frame
+	return get_tree().current_scene as WORLD
