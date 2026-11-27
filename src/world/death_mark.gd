@@ -10,6 +10,7 @@ signal inspected(mark: DeathMark)
 
 var victim_name: String = "Neznámý"
 var was_assassin: bool = false
+var victim_gender: CharacterAppearance.Gender = CharacterAppearance.Gender.MALE
 var frame_index: int = -1
 var is_inspected: bool = false
 
@@ -37,9 +38,16 @@ func _process(delta: float) -> void:
 			info_label.visible = false
 
 
-func setup(p_victim_name: String, p_was_assassin: bool, p_frame_index: int = -1, p_inspected: bool = false) -> void:
+func setup(
+	p_victim_name: String,
+	p_was_assassin: bool,
+	p_frame_index: int = -1,
+	p_inspected: bool = false,
+	p_gender: CharacterAppearance.Gender = CharacterAppearance.Gender.MALE
+) -> void:
 	victim_name = p_victim_name
 	was_assassin = p_was_assassin
+	victim_gender = p_gender
 	frame_index = p_frame_index
 	is_inspected = p_inspected
 	if is_node_ready():
@@ -64,7 +72,9 @@ func on_interaction_completed(_actor: Node3D, _kind: InteractableNpc.Interaction
 func _update_label_text() -> void:
 	if not info_label:
 		return
+	var header := "Zde zemřela:" if victim_gender == CharacterAppearance.Gender.FEMALE else "Zde zemřel:"
 	if was_assassin:
-		info_label.text = "Zde zemřel:\n%s (Assassin)" % victim_name
+		info_label.text = "%s\n%s" % [header, victim_name]
 	else:
-		info_label.text = "Zde zemřel:\nCivilista"
+		var civ_label := "Civilistka" if victim_gender == CharacterAppearance.Gender.FEMALE else "Civilista"
+		info_label.text = "%s\n%s" % [header, civ_label]

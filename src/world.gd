@@ -22,11 +22,14 @@ const LATE_PRESSURE_START := 0.6
 @export_group("Camera")
 @export var camera_half_width: float = 6.0
 @export var camera_smooth_speed: float = 6.0
+@export var zoom_focus_y_offset: float = 1.05
 @export var list_zoom_factor: float = 0.65
 @export var list_zoom_duration: float = 0.35
 @export var list_zoom_x_offset: float = 0.9
-@export var assassinate_zoom_factor: float = 0.82
-@export var assassinate_focus_y_offset: float = 1.2
+@export var lean_zoom_factor: float = 0.78
+@export var lean_zoom_duration: float = 0.35
+@export var assassinate_zoom_factor: float = 0.65
+@export var assassinate_focus_y_offset: float = 1.05
 @export var assassinate_zoom_return_duration: float = 0.32
 
 @export_group("Audio (Hudba & SFX)")
@@ -57,6 +60,7 @@ var _camera_base_offset: Vector3 = Vector3.ZERO
 var _camera_base_size: float = 6.8
 var _camera_zoom_tween: Tween = null
 var _is_list_open: bool = false
+var _is_leaning: bool = false
 var _is_assassinating: bool = false
 var _assassinate_progress: float = 0.0
 var _assassinate_target: Node3D = null
@@ -113,6 +117,7 @@ func _ready() -> void:
 	_player.killed_by_assassin.connect(_on_player_killed)
 	_player.assassination_spotted.connect(_break_combo)
 	_player.distraction_thrown.connect(func(_point: Vector3, left: int) -> void: _game_hud.set_distractions(left))
+	_player.lean_state_changed.connect(_on_player_lean_state_changed)
 	_player.interaction_started.connect(_on_player_interaction_started)
 	_player.interaction_progress_changed.connect(_on_player_interaction_progress_changed)
 	_player.interaction_cancelled.connect(_on_player_interaction_ended)
@@ -132,6 +137,14 @@ func _start_match() -> void:
 		maxi(1, _levels.size())
 	)
 	reserved_signatures = CharacterGenerator.collect_reserved_signatures(assassins)
+
+	if _player and _player.visuals:
+		var player_appearance := CharacterGenerator.generate_civilian_appearance(
+			appearance_pool,
+			reserved_signatures
+		)
+		reserved_signatures[player_appearance.get_signature()] = true
+		_player.visuals.appearance = player_appearance
 
 	await PortraitBaker.bake_portraits(self, assassins)
 
@@ -223,10 +236,11 @@ func _start_defense(attacker: NpcBase) -> void:
 	attacker.set_physics_process(false)
 	if attacker.visuals:
 		attacker.visuals.play_attack_windup(_player, _player_camera.global_position.z - 2.0)
-	var focus_x := lerpf(attacker.global_position.x, _player.global_position.x, 0.2)
-	var camera_tween := _zoom_camera(_camera_base_size * 0.48, 0.28).set_parallel()
-	camera_tween.tween_property(_player_camera, "global_position:x", focus_x, 0.28)
-	camera_tween.tween_property(_player_camera, "global_position:y", _player.global_position.y + 1.15, 0.28)
+	var focus_x := lerpf(attacker.global_position.x, _player.global_position.x, 0.35)
+	var focus_y := lerpf(attacker.global_position.y, _player.global_position.y, 0.5) + zoom_focus_y_offset
+	var tween := _zoom_camera(_camera_base_size * 0.48, 0.28)
+	tween.parallel().tween_property(_player_camera, "global_position:x", focus_x, 0.28)
+	tween.parallel().tween_property(_player_camera, "global_position:y", focus_y, 0.28)
 	_game_hud.show_defense_prompt()
 
 
@@ -260,11 +274,24 @@ func _on_assassin_list_visibility_changed(is_open: bool) -> void:
 	_is_list_open = is_open
 	_player.set_movement_locked(is_open)
 	AudioManager.play_sfx(sfx_list_toggle)
+	_update_resting_zoom(list_zoom_duration)
 
+
+func _on_player_lean_state_changed(is_leaning: bool) -> void:
+	_is_leaning = is_leaning
+	if _defense_deadline_ms == 0 and not _is_assassinating and not _is_list_open:
+		_update_resting_zoom(lean_zoom_duration)
+
+
+func _update_resting_zoom(duration: float) -> void:
 	if not _player_camera:
 		return
-	var target_size := _camera_base_size * list_zoom_factor if is_open else _camera_base_size
-	_zoom_camera(target_size, list_zoom_duration)
+	var target_size := _camera_base_size
+	if _is_list_open:
+		target_size = _camera_base_size * list_zoom_factor
+	elif _is_leaning:
+		target_size = _camera_base_size * lean_zoom_factor
+	_zoom_camera(target_size, duration)
 
 
 func _zoom_camera(target_size: float, duration: float) -> Tween:
@@ -338,8 +365,13 @@ func _update_camera_clamp(delta: float) -> void:
 		return
 
 	var target_world_x: float
+	var target_world_y: float
 	if _is_list_open:
 		target_world_x = _player.global_position.x + list_zoom_x_offset
+		target_world_y = _player.global_position.y + zoom_focus_y_offset
+	elif _is_leaning:
+		target_world_x = _player.global_position.x
+		target_world_y = _player.global_position.y + zoom_focus_y_offset
 	else:
 		var min_cam_x := _active_zone.min_x + camera_half_width
 		var max_cam_x := _active_zone.max_x - camera_half_width
@@ -348,11 +380,12 @@ func _update_camera_clamp(delta: float) -> void:
 			if min_cam_x > max_cam_x
 			else clampf(_player.global_position.x, min_cam_x, max_cam_x)
 		)
+		target_world_y = _player.global_position.y + _camera_base_offset.y
 
 	var weight := 1.0 - exp(-camera_smooth_speed * delta)
 	var pos := _player_camera.global_position
 	pos.x = lerpf(pos.x, target_world_x, weight)
-	pos.y = lerpf(pos.y, _player.global_position.y + _camera_base_offset.y, weight)
+	pos.y = lerpf(pos.y, target_world_y, weight)
 	pos.z = _player.global_position.z + _camera_base_offset.z
 	_player_camera.global_position = pos
 
@@ -460,15 +493,27 @@ func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role
 
 func _on_player_killed(attacker: Node3D, death_animation: Tween) -> void:
 	AudioManager.play_sfx(sfx_player_killed)
-	_director.spawn_death_mark(_player.global_position, "Ty (Hráč)", true)
+	var player_gender := (
+		_player.visuals.appearance.gender
+		if _player and _player.visuals and _player.visuals.appearance
+		else CharacterAppearance.Gender.MALE
+	)
+	_director.spawn_death_mark(_player.global_position, "Ty", true, player_gender)
 
 	var killer_name := "neznámý assassin"
-	if attacker is NpcBase and not attacker.display_name.is_empty():
-		killer_name = attacker.display_name
+	var killer_is_female := false
+	if attacker is NpcBase:
+		if not attacker.display_name.is_empty():
+			killer_name = attacker.display_name
+		if attacker.appearance and attacker.appearance.gender == CharacterAppearance.Gender.FEMALE:
+			killer_is_female = true
 	if attacker is NpcBase and attacker.character_data and attacker.character_data.is_assassin:
 		attacker.character_data.has_killed = true
 		attacker.character_data.kill_score += score_assassin_kill
-	_end_match("Byl jsi zabit", "Dostal tě %s.\nKonečné skóre: %d" % [killer_name, _score], death_animation)
+
+	var end_title := "Byla jsi zabita" if player_gender == CharacterAppearance.Gender.FEMALE else "Byl jsi zabit"
+	var got_you := "Dostala tě" if killer_is_female else "Dostal tě"
+	_end_match(end_title, "%s %s.\nKonečné skóre: %d" % [got_you, killer_name, _score], death_animation)
 
 
 func _format_leaderboard() -> String:

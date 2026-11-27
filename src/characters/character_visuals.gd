@@ -5,6 +5,7 @@ extends Node3D
 signal action_finished(action_name: StringName)
 signal hit_frame
 
+const DEFAULT_HAIR_MATERIAL: ShaderMaterial = preload("res://assets/hair/toon_hair_material.tres")
 const ATTACK_CONTACT_TIME := 0.12
 const BRUSH_REVEAL_PROGRESS := 0.82
 const WALK_BLEND_RATE := 9.0
@@ -166,10 +167,10 @@ func _apply_appearance() -> void:
 	if ear_l:
 		ear_l.modulate = appearance.skin_color
 
-	set_headwear(appearance.headwear_scene)
+	set_headwear(appearance.headwear_scene, appearance.hair_color)
 
 
-func set_headwear(scene: PackedScene) -> void:
+func set_headwear(scene: PackedScene, hair_color: Color = Color(0.18, 0.14, 0.12, 1.0)) -> void:
 	if not headwear_anchor:
 		return
 	for child in headwear_anchor.get_children():
@@ -177,6 +178,41 @@ func set_headwear(scene: PackedScene) -> void:
 	if scene:
 		var inst := scene.instantiate()
 		headwear_anchor.add_child(inst)
+		_apply_stylized_hair_material(inst, hair_color)
+
+
+@export var hair_material_template: ShaderMaterial = DEFAULT_HAIR_MATERIAL
+## Cílová tloušťka černého obrysu vlasů ve světových jednotkách (kompenzuje různé scale uvnitř .gltf).
+@export var hair_outline_world_thickness: float = 0.036
+
+
+func _apply_stylized_hair_material(root: Node, color: Color) -> void:
+	if not hair_material_template:
+		return
+	_apply_material_to_untextured_meshes(root, color, 1.0)
+
+
+func _apply_material_to_untextured_meshes(node: Node, color: Color, inherited_scale: float) -> void:
+	var current_scale := inherited_scale
+	if node is Node3D:
+		var s: Vector3 = node.scale.abs()
+		var uniform_s := (s.x + s.y + s.z) / 3.0
+		if uniform_s > 0.0001:
+			current_scale *= uniform_s
+
+	if node is MeshInstance3D and node.material_override == null:
+		var mat := hair_material_template.duplicate() as ShaderMaterial
+		mat.set_shader_parameter(&"_base_tint", color)
+		mat.set_shader_parameter(&"_shadow_tint", color.darkened(0.38))
+		if mat.next_pass is StandardMaterial3D:
+			var outline := mat.next_pass.duplicate() as StandardMaterial3D
+			if outline.grow and current_scale > 0.0001:
+				outline.grow_amount = hair_outline_world_thickness / current_scale
+			mat.next_pass = outline
+		node.material_override = mat
+
+	for child in node.get_children():
+		_apply_material_to_untextured_meshes(child, color, current_scale)
 
 ## Natočí hlavu směrem ke světové pozici (např. kurzor, hráč, podezřelý zvuk)
 func look_at_world_point(world_point: Vector3) -> void:

@@ -11,6 +11,28 @@ script = ExtResource("3_0axh6")
 skin_color = Color(0.18995202, 0.45757437, 0.41507116, 1)
 metadata/_custom_type_script = "uid://bmonou5unw40"
 
+[sub_resource type="StandardMaterial3D" id="Material_rear_limb"]
+shading_mode = 0
+albedo_color = Color(0.052, 0.053, 0.057, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_limb"]
+shading_mode = 0
+albedo_color = Color(0.012, 0.013, 0.015, 1)
+
+[sub_resource type="CapsuleMesh" id="Mesh_limb"]
+material = SubResource("Material_limb")
+radius = 0.033
+height = 1.0
+radial_segments = 8
+rings = 2
+
+[sub_resource type="CapsuleMesh" id="Mesh_foot"]
+material = SubResource("Material_limb")
+radius = 0.024
+height = 0.142
+radial_segments = 8
+rings = 2
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_bq6vk"]
 cull_mode = 1
 shading_mode = 0
@@ -27,28 +49,6 @@ uv1_offset = Vector3(-0.58, -0.645, 0)
 texture_repeat = false
 
 [sub_resource type="SphereMesh" id="SphereMesh_kakee"]
-
-[sub_resource type="StandardMaterial3D" id="Material_limb"]
-shading_mode = 0
-albedo_color = Color(0.012, 0.013, 0.015, 1)
-
-[sub_resource type="StandardMaterial3D" id="Material_rear_limb"]
-shading_mode = 0
-albedo_color = Color(0.052, 0.053, 0.057, 1)
-
-[sub_resource type="CapsuleMesh" id="Mesh_limb"]
-material = SubResource("Material_limb")
-radius = 0.033
-height = 1.0
-radial_segments = 8
-rings = 2
-
-[sub_resource type="CapsuleMesh" id="Mesh_foot"]
-material = SubResource("Material_limb")
-radius = 0.024
-height = 0.142
-radial_segments = 8
-rings = 2
 
 [sub_resource type="StandardMaterial3D" id="Material_brush_handle"]
 shading_mode = 0
@@ -77,77 +77,58 @@ rings = 4
 script = ExtResource("1_4phqr")
 appearance = SubResource("Resource_4phqr")
 
-[node name="BodyRig" type="Node3D" parent="."]
-position = Vector3(0, 0, -0.093)
+[node name="BodyRig" type="Node3D" parent="." unique_id=583144297]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.093)
 
 [node name="BodySprite" type="Sprite3D" parent="BodyRig" unique_id=852741146]
-position = Vector3(0, 0.554, 0)
-scale = Vector3(0.93, 1, 1)
+transform = Transform3D(0.93, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.554, 0)
 texture = ExtResource("1_g4g0v")
 region_enabled = true
-region_rect = Rect2(23, 0, 32, 61)
+region_rect = Rect2(23, 0, 29.423996, 59.02861)
 
-[node name="BackUpperArm" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(-0.18225, 0.5824, -0.055)
-rotation = Vector3(0, 0, 2.65007)
-scale = Vector3(1, 0.26641, 1)
-mesh = SubResource("Mesh_limb")
+[node name="BackUpperArm" type="MeshInstance3D" parent="BodyRig" unique_id=1570203904]
+transform = Transform3D(-0.8816152, -0.12573722, 0, 0.47196886, -0.2348711, 0, 0, 0, 1, -0.18225, 0.5824, -0.055)
 material_override = SubResource("Material_rear_limb")
-
-[node name="BackForearm" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(-0.25725, 0.4124, -0.055)
-rotation = Vector3(0, 0, 2.83714)
-scale = Vector3(1, 0.19678, 1)
 mesh = SubResource("Mesh_limb")
+
+[node name="BackForearm" type="MeshInstance3D" parent="BodyRig" unique_id=1824743612]
+transform = Transform3D(-0.9540112, -0.058988925, 0, 0.29977095, -0.18773033, 0, 0, 0, 1, -0.25725, 0.4124, -0.055)
 material_override = SubResource("Material_rear_limb")
-
-[node name="FrontUpperArm" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(0.18225, 0.5824, 0.025)
-rotation = Vector3(0, 0, -2.65007)
-scale = Vector3(1, 0.26641, 1)
 mesh = SubResource("Mesh_limb")
 
-[node name="FrontForearm" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(0.25725, 0.4124, 0.025)
-rotation = Vector3(0, 0, -2.83714)
-scale = Vector3(1, 0.19678, 1)
+[node name="FrontUpperArm" type="MeshInstance3D" parent="BodyRig" unique_id=96410094]
+transform = Transform3D(-0.8816152, 0.12573722, 0, -0.47196886, -0.2348711, 0, 0, 0, 1, 0.18225, 0.5824, 0.025)
 mesh = SubResource("Mesh_limb")
 
-[node name="BackThigh" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(-0.1, 0.25625, -0.055)
-rotation = Vector3(0, 0, 3.00682)
-scale = Vector3(1, 0.19385, 1)
+[node name="FrontForearm" type="MeshInstance3D" parent="BodyRig" unique_id=254640001]
+transform = Transform3D(-0.9540112, 0.058988925, 0, -0.29977095, -0.18773033, 0, 0, 0, 1, 0.25725, 0.4124, 0.025)
 mesh = SubResource("Mesh_limb")
+
+[node name="BackThigh" type="MeshInstance3D" parent="BodyRig" unique_id=177620388]
+transform = Transform3D(-0.9909319, -0.026046667, 0, 0.13436507, -0.19209215, 0, 0, 0, 1, -0.1, 0.25625, -0.055)
 material_override = SubResource("Material_rear_limb")
-
-[node name="BackShin" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(-0.12, 0.10875, -0.055)
-rotation = Vector3(0, 0, 3.00682)
-scale = Vector3(1, 0.19385, 1)
 mesh = SubResource("Mesh_limb")
-material_override = SubResource("Material_rear_limb")
 
-[node name="BackFoot" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(-0.13, 0.025, -0.055)
-rotation = Vector3(0, 0, -1.5707963)
+[node name="BackShin" type="MeshInstance3D" parent="BodyRig" unique_id=716268170]
+transform = Transform3D(-0.9909319, -0.026046667, 0, 0.13436507, -0.19209215, 0, 0, 0, 1, -0.12, 0.10875, -0.055)
+material_override = SubResource("Material_rear_limb")
+mesh = SubResource("Mesh_limb")
+
+[node name="BackFoot" type="MeshInstance3D" parent="BodyRig" unique_id=1939097842]
+transform = Transform3D(7.54979e-08, 1, 0, -1, 7.54979e-08, 0, 0, 0, 1, -0.13, 0.025, -0.055)
+material_override = SubResource("Material_rear_limb")
 mesh = SubResource("Mesh_foot")
-material_override = SubResource("Material_rear_limb")
 
-[node name="FrontThigh" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(0.1, 0.25625, 0)
-rotation = Vector3(0, 0, -3.00682)
-scale = Vector3(1, 0.19385, 1)
+[node name="FrontThigh" type="MeshInstance3D" parent="BodyRig" unique_id=1792795374]
+transform = Transform3D(-0.9909319, 0.026046667, 0, -0.13436507, -0.19209215, 0, 0, 0, 1, 0.1, 0.25625, 0)
 mesh = SubResource("Mesh_limb")
 
-[node name="FrontShin" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(0.12, 0.10875, 0)
-rotation = Vector3(0, 0, -3.00682)
-scale = Vector3(1, 0.19385, 1)
+[node name="FrontShin" type="MeshInstance3D" parent="BodyRig" unique_id=534863275]
+transform = Transform3D(-0.9909319, 0.026046667, 0, -0.13436507, -0.19209215, 0, 0, 0, 1, 0.12, 0.10875, 0)
 mesh = SubResource("Mesh_limb")
 
-[node name="FrontFoot" type="MeshInstance3D" parent="BodyRig"]
-position = Vector3(0.13, 0.025, 0)
-rotation = Vector3(0, 0, -1.5707963)
+[node name="FrontFoot" type="MeshInstance3D" parent="BodyRig" unique_id=1645801722]
+transform = Transform3D(7.54979e-08, 1, 0, -1, 7.54979e-08, 0, 0, 0, 1, 0.13, 0.025, 0)
 mesh = SubResource("Mesh_foot")
 
 [node name="BalloonAnchor" type="Marker3D" parent="BodyRig" unique_id=2047666363]
@@ -171,25 +152,25 @@ transform = Transform3D(0.3316418, 0, 0.39979857, 0, 0.38902172, 0, -0.14465359,
 flip_h = true
 texture = ExtResource("5_4drbo")
 
-[node name="HeadwearAnchor" type="Marker3D" parent="HeadPivot"]
+[node name="HeadwearAnchor" type="Marker3D" parent="HeadPivot" unique_id=2060358200]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.7815, 0)
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1040987947]
 
-[node name="Toothbrush" type="Node3D" parent="."]
+[node name="Toothbrush" type="Node3D" parent="." unique_id=1618517276]
 visible = false
 
-[node name="Handle" type="MeshInstance3D" parent="Toothbrush"]
-position = Vector3(0.18, 0, 0)
+[node name="Handle" type="MeshInstance3D" parent="Toothbrush" unique_id=1884386807]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0, 0)
 cast_shadow = 0
 mesh = SubResource("Mesh_brush_handle")
 
-[node name="Bristles" type="MeshInstance3D" parent="Toothbrush/Handle"]
-position = Vector3(0.22, 0.07, 0)
+[node name="Bristles" type="MeshInstance3D" parent="Toothbrush/Handle" unique_id=494786517]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22, 0.07, 0)
 cast_shadow = 0
 mesh = SubResource("Mesh_brush_bristles")
 
-[node name="Hand" type="MeshInstance3D" parent="Toothbrush"]
-position = Vector3(0, 0, 0.025)
+[node name="Hand" type="MeshInstance3D" parent="Toothbrush" unique_id=1746589833]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.025)
 cast_shadow = 0
 mesh = SubResource("Mesh_grip_hand")

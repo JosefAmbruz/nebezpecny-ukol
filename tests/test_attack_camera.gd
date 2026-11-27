@@ -34,7 +34,7 @@ func _ready() -> void:
 	assert(player._active_target == null)
 	world._start_defense(victim)
 	await world._camera_zoom_tween.finished
-	assert(absf(world._player_camera.global_position.y - player.global_position.y - 1.15) < 0.01)
+	assert(absf(world._player_camera.global_position.y - lerpf(victim.global_position.y, player.global_position.y, 0.5) - world.zoom_focus_y_offset) < 0.01)
 	var viewport_size := get_viewport().get_visible_rect().size
 	for point in [player.global_position, player.global_position + Vector3.UP * 2.0, victim.global_position, victim.global_position + Vector3.UP * 2.0]:
 		var screen: Vector2 = world._player_camera.unproject_position(point)

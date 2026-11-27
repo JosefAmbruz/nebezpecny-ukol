@@ -19,9 +19,15 @@
 [ext_resource type="Texture2D" uid="uid://cn5n7rr2ag1ts" path="res://assets/faces/face16.png" id="16_l1j3w"]
 [ext_resource type="Texture2D" uid="uid://cb2lf6bexggkp" path="res://assets/faces/face17.png" id="17_yoesg"]
 [ext_resource type="Texture2D" uid="uid://bjgvlcma8kcpp" path="res://assets/faces/face18.png" id="18_86kju"]
+[ext_resource type="PackedScene" path="res://assets/hair/hair_buns.tscn" id="19_hbuns"]
+[ext_resource type="PackedScene" uid="uid://dfuqw1omf8ww7" path="res://assets/hair/hair_buzzed.tscn" id="20_hbuz"]
+[ext_resource type="PackedScene" uid="uid://djc5uqb83307f" path="res://assets/hair/hair_buzzed_female.tscn" id="21_hbuzf"]
+[ext_resource type="PackedScene" uid="uid://r7sunaljatl3" path="res://assets/hair/hair_long.tscn" id="22_hlong"]
 
 [resource]
 script = ExtResource("1_pool")
-face_textures = Array[Texture2D]([ExtResource("2_f1"), ExtResource("3_f2"), ExtResource("3_lsgvq"), ExtResource("4_i1wtg"), ExtResource("5_uydca"), ExtResource("6_8a0ox"), ExtResource("7_nlctu"), ExtResource("8_c3f7c"), ExtResource("9_h3n8g"), ExtResource("10_tm1b6"), ExtResource("11_81enf"), ExtResource("12_ok0kg"), ExtResource("13_bg615"), ExtResource("14_x4f0w"), ExtResource("15_ivad0"), ExtResource("16_l1j3w"), ExtResource("17_yoesg"), ExtResource("18_86kju")])
-skin_colors = Array[Color]([Color(0.98, 0.85, 0.76, 1), Color(0.92, 0.75, 0.62, 1), Color(0.84, 0.63, 0.49, 1), Color(0.68, 0.46, 0.34, 1)])
-names = Array[String](["Adam Lajner", "Dalibor Kramář", "Tomáš Meduňa", "Anna Fajkusová", "Monika Čechová", "Josef Ambruz", "Jan Ošmera", "Ondřej Šrámek", "Trilia Brix", "David Štorek", "Sarah Baráková", "Jan Cejpek", "Václav Chochola", "Adam Špaček"])
+unisex_faces = Array[Texture2D]([ExtResource("2_f1"), ExtResource("3_f2"), ExtResource("3_lsgvq"), ExtResource("4_i1wtg"), ExtResource("5_uydca"), ExtResource("6_8a0ox"), ExtResource("7_nlctu"), ExtResource("8_c3f7c"), ExtResource("9_h3n8g"), ExtResource("10_tm1b6"), ExtResource("11_81enf"), ExtResource("12_ok0kg"), ExtResource("13_bg615"), ExtResource("14_x4f0w"), ExtResource("15_ivad0"), ExtResource("16_l1j3w"), ExtResource("17_yoesg"), ExtResource("18_86kju")])
+male_hair_scenes = Array[PackedScene]([ExtResource("20_hbuz"), ExtResource("21_hbuzf")])
+female_hair_scenes = Array[PackedScene]([ExtResource("19_hbuns"), ExtResource("21_hbuzf"), ExtResource("22_hlong")])
+male_names = Array[String](["Adam Lajner", "Dalibor Kramář", "Tomáš Meduňa", "Josef Ambruz", "Jan Ošmera", "Ondřej Šrámek", "David Štorek", "Jan Cejpek", "Václav Chochola", "Adam Špaček"])
+female_names = Array[String](["Anna Fajkusová", "Monika Čechová", "Trilia Brix", "Sarah Baráková"])

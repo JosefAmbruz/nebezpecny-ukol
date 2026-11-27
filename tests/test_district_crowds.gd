@@ -9,13 +9,13 @@ func _ready() -> void:
 	while world._director.active_level_id < 0:
 		await get_tree().process_frame
 	world._levels[1].ambient_stream = null
-	assert(world._director._active_civilians.size() == 4)
+	assert(world._director._active_civilians.size() == 8)
 	world._director.activate_level(1)
-	assert(world._director._active_civilians.size() == 6)
+	assert(world._director._active_civilians.size() == 10)
 	world._director.activate_level(2)
-	assert(world._director._active_civilians.size() == 3)
+	assert(world._director._active_civilians.size() == 7)
 	world._director.activate_level(1)
-	assert(world._director._active_civilians.size() == 6)
+	assert(world._director._active_civilians.size() == 10)
 	world.queue_free()
 	await get_tree().process_frame
 	print("Districts spawn their crowds correctly on entry and return.")

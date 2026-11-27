@@ -9,6 +9,7 @@ signal interaction_cancelled
 signal interaction_completed(target: InteractableNpc, kind: InteractableNpc.InteractionKind)
 signal interaction_hint_changed(hint: InteractionHint)
 signal safe_state_changed(is_safe: bool, can_lean: bool)
+signal lean_state_changed(is_leaning: bool)
 signal defense_requested(attacker: Node3D)
 signal killed_by_assassin(attacker: Node3D, death_animation: Tween)
 signal assassination_spotted
@@ -256,6 +257,7 @@ func _start_leaning(safe_obj: SafeObject) -> void:
 	_current_lean_object = safe_obj
 	_lean_time_left = safe_obj.max_lean_duration
 	safe_obj.register_occupant(self)
+	lean_state_changed.emit(true)
 
 
 func _stop_leaning() -> void:
@@ -266,6 +268,7 @@ func _stop_leaning() -> void:
 		_current_lean_object.unregister_occupant(self)
 		_current_lean_object = null
 	_lean_cooldown_left = lean_cooldown
+	lean_state_changed.emit(false)
 
 
 func _get_available_lean_object() -> SafeObject:

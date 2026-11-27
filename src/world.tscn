@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" uid="uid://cslhaif871y5v" path="res://src/player.tscn" id="1_tp5op"]
 [ext_resource type="AudioStream" uid="uid://cpf50ou2mqw3p" path="res://assets/music/theme.mp3" id="2_5xesp"]
-[ext_resource type="PackedScene" path="res://src/ui/interaction_indicator.tscn" id="2_uiind"]
+[ext_resource type="PackedScene" uid="uid://dujxkg6q8c5eu" path="res://src/ui/interaction_indicator.tscn" id="2_uiind"]
 [ext_resource type="Texture2D" uid="uid://bnt152wwk6mrb" path="res://assets/faces/face4.png" id="3_tnjnu"]
 [ext_resource type="PackedScene" uid="uid://ctuvvi1xre6er" path="res://src/world/safe_object.tscn" id="4_safe"]
 [ext_resource type="Script" uid="uid://bmonou5unw40" path="res://src/characters/character_appearance.gd" id="5_app"]
@@ -16,18 +16,17 @@
 [ext_resource type="PackedScene" path="res://src/ui/game_hud.tscn" id="10_hud"]
 [ext_resource type="Script" uid="uid://cc1emyuveghto" path="res://src/world/level_zone.gd" id="11_zone"]
 [ext_resource type="Script" uid="uid://bvrl8vu1qkm70" path="res://src/world/off_screen_director.gd" id="12_dir"]
+[ext_resource type="Texture2D" uid="uid://b0paxksym3mlp" path="res://assets/environment/skybox/industrial_sunset_puresky.png" id="13_sky"]
 
-[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_tp5op"]
-sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
-ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_vmuob"]
+panorama = ExtResource("13_sky")
 
-[sub_resource type="Sky" id="Sky_xlegt"]
-sky_material = SubResource("ProceduralSkyMaterial_tp5op")
+[sub_resource type="Sky" id="Sky_yyjdi"]
+sky_material = SubResource("PanoramaSkyMaterial_vmuob")
 
-[sub_resource type="Environment" id="Environment_0qwtu"]
+[sub_resource type="Environment" id="Environment_8kjpi"]
 background_mode = 2
-sky = SubResource("Sky_xlegt")
-glow_enabled = true
+sky = SubResource("Sky_yyjdi")
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
 size = Vector3(96, 2, 57.13867)
@@ -59,14 +58,19 @@ metadata/_custom_type_script = "uid://bmonou5unw40"
 
 [node name="World" type="Node3D" unique_id=1484689679]
 script = ExtResource("8_world")
+quest_assassins = 3
 background_music = ExtResource("2_5xesp")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=540334264]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
+light_color = Color(1, 0.89, 0.74, 1)
+light_energy = 1.15
 shadow_enabled = true
+shadow_opacity = 0.55
+shadow_blur = 2.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2107170856]
-environment = SubResource("Environment_0qwtu")
+environment = SubResource("Environment_8kjpi")
 
 [node name="Ground" type="StaticBody3D" parent="." unique_id=1281902058]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, -0.5, 0)
@@ -84,6 +88,7 @@ shape = SubResource("ConcavePolygonShape3D_eemcn")
 [node name="Level1" type="Node3D" parent="Levels" unique_id=688422837 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
 script = ExtResource("11_zone")
 level_name = "Start"
+civilian_count = 8
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")
 quest_npc_spawn = NodePath("QuestNpcSpawn")
@@ -112,7 +117,7 @@ texture = ExtResource("8_a3wil")
 script = ExtResource("11_zone")
 level_id = 1
 level_name = "Náměstí"
-civilian_count = 6
+civilian_count = 10
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")
 quest_npc_spawn = NodePath("QuestNpcSpawn")
@@ -142,7 +147,7 @@ mesh = SubResource("BoxMesh_marker")
 script = ExtResource("11_zone")
 level_id = 2
 level_name = "Park"
-civilian_count = 3
+civilian_count = 7
 left_bound = NodePath("LeftBound")
 right_bound = NodePath("RightBound")
 quest_npc_spawn = NodePath("QuestNpcSpawn")
