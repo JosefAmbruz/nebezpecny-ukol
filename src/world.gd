@@ -1,6 +1,8 @@
 extends Node3D
 
 const DEFENSE_TIME_SCALE := 0.18
+## Od této části zápasu assassini postupně přitvrzují.
+const LATE_PRESSURE_START := 0.6
 
 @export var appearance_pool: AppearancePool = preload("res://src/characters/default_appearance_pool.tres")
 @export var total_assassins: int = 8
@@ -87,6 +89,7 @@ func _ready() -> void:
 		if child is LevelZone:
 			_levels.append(child)
 	_player.reaction_grace_time = Difficulty.get_preset()["reaction_grace_time"]
+	NpcBase.late_pressure = 0.0
 	_levels.sort_custom(func(a: LevelZone, b: LevelZone) -> bool: return a.level_id < b.level_id)
 
 	if not _levels.is_empty():
@@ -193,6 +196,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _exit_tree() -> void:
+	NpcBase.late_pressure = 0.0
 	if _defense_deadline_ms != 0:
 		Engine.time_scale = _normal_time_scale
 
@@ -349,8 +353,12 @@ func _update_camera_clamp(delta: float) -> void:
 func _update_match_clock(delta: float) -> void:
 	_elapsed_time += delta
 	var progress := clampf(_elapsed_time / maxf(1.0, match_duration_seconds), 0.0, 1.0)
+	var was_calm := NpcBase.late_pressure == 0.0
+	NpcBase.late_pressure = clampf((progress - LATE_PRESSURE_START) / (1.0 - LATE_PRESSURE_START), 0.0, 1.0)
 	if _game_hud:
 		_game_hud.set_clock_progress(progress)
+		if was_calm and NpcBase.late_pressure > 0.0:
+			_game_hud.show_event("Blíží se 19:00. Assassini znervózněli a útočí odvážněji.")
 
 	if _elapsed_time >= match_duration_seconds:
 		_end_match("Čas vypršel (19:00)", "Tvoje konečné skóre: %d" % _score)

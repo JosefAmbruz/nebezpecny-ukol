@@ -66,6 +66,13 @@ const DEFENSE_STUN_DURATION := 3.0
 @export var balloon_detect_range_multiplier: float = 1.8
 @export var sprint_detect_multiplier: float = 2.5
 @export var post_abort_cooldown: float = 4.0
+## Při plném tlaku závěru zápasu se šance začít stopovat násobí touto hodnotou.
+@export var late_stalk_multiplier: float = 2.0
+## Při plném tlaku se nabíjení útoku zrychlí o tento podíl.
+@export var late_attack_speedup: float = 0.4
+
+## Tlak závěru zápasu 0..1. Nastavuje World podle hodin; sdílí ho všechna NPC.
+static var late_pressure: float = 0.0
 
 var state: State = State.WANDER
 var has_balloon: bool = false:
@@ -340,6 +347,7 @@ func _try_acquire_stalk_target(delta: float) -> void:
 			if distance > target_range or _target_is_safe(target):
 				continue
 			var rate := stalk_trigger_chance_per_sec * lerpf(1.0, 0.4, distance / target_range)
+			rate *= lerpf(1.0, late_stalk_multiplier, late_pressure)
 			if target.get(&"has_balloon") == true:
 				rate *= balloon_detect_multiplier
 			if target.get(&"is_sprinting") == true:
@@ -414,7 +422,7 @@ func _process_attack(delta: float) -> void:
 
 	velocity.x = 0.0
 	_looking_right = dist_x >= 0.0
-	_attack_elapsed += delta
+	_attack_elapsed += delta * (1.0 + late_attack_speedup * late_pressure)
 	if visuals:
 		var charge := clampf(_attack_elapsed / maxf(0.05, attack_duration), 0.0, 1.0)
 		visuals.prepare_attack(_stalk_target, charge * 0.84)

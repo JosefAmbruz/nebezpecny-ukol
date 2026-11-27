@@ -80,6 +80,7 @@ func set_clock_progress(progress: float) -> void:
 	var hours := 18 + int(total_minutes / 60)
 	var minutes := total_minutes % 60
 	_clock_label.text = "%02d:%02d / 19:00" % [hours, minutes]
+	_clock_label.modulate = Color(1.0, 0.55, 0.45) if clamped >= 0.6 else Color.WHITE
 
 
 func set_score(score: int, combo: String = "") -> void:
@@ -95,6 +96,11 @@ func set_level(level_name: String, level_id: int) -> void:
 func show_rival_battery(rival_name: String, level_name: String) -> void:
 	%RivalEvent.text = "%s | %s získal baterii: %s" % [_clock_label.text.get_slice(" /", 0), rival_name, level_name]
 	%RivalEvent.show()
+
+
+func show_event(message: String) -> void:
+	%EventLabel.text = "%s | %s" % [_clock_label.text.get_slice(" /", 0), message]
+	%EventLabel.show()
 
 
 func enable_restart() -> void:
