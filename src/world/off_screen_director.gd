@@ -5,6 +5,7 @@ signal npc_died(npc: NpcBase, killer: Node3D)
 signal quest_npc_interacted(npc: QuestNpc, actor: Node3D, role: QuestNpc.Role)
 signal level_activated(zone: LevelZone)
 signal rival_found_battery(data: CharacterData, zone: LevelZone)
+signal tram_arrived(zone: LevelZone)
 
 const NPC_BASE_SCENE: PackedScene = preload("res://src/characters/npc_base.tscn")
 const QUEST_NPC_SCENE: PackedScene = preload("res://src/characters/quest_npc.tscn")
@@ -18,6 +19,15 @@ const DEATH_MARK_SCENE: PackedScene = preload("res://src/world/death_mark.tscn")
 @export var z_min: float = -4.5
 @export var z_max: float = 4.5
 @export var player_reserved_z: float = 2.4
+
+@export_group("Šalina")
+@export var tram_interval_range: Vector2 = Vector2(45.0, 75.0)
+@export var tram_passengers_in: int = 3
+@export var tram_passengers_out: int = 2
+## Jak dlouho hluk šaliny přehlušuje svědky.
+@export var tram_noise_duration: float = 6.0
+## Lidé dál než tohle od hráče jsou mimo záběr a můžou nenápadně nastoupit.
+@export var tram_offscreen_distance: float = 8.0
 
 var active_level_id: int = -1
 
@@ -37,6 +47,7 @@ var _active_death_marks: Array[DeathMark] = []
 var _available_z_lanes: Array[float] = []
 var _overflow_lane_index: int = 0
 var _tick_timer: Timer = null
+var _tram_timer: Timer = null
 
 
 func _ready() -> void:
@@ -45,6 +56,11 @@ func _ready() -> void:
 	_tick_timer.autostart = false
 	_tick_timer.timeout.connect(_on_director_tick)
 	add_child(_tick_timer)
+
+	_tram_timer = Timer.new()
+	_tram_timer.one_shot = true
+	_tram_timer.timeout.connect(_on_tram_timer)
+	add_child(_tram_timer)
 
 
 func initialize(
@@ -87,6 +103,7 @@ func initialize(
 		})
 
 	_tick_timer.start()
+	_tram_timer.start(randf_range(tram_interval_range.x, tram_interval_range.y))
 
 
 func activate_level(new_level_id: int) -> void:
@@ -171,36 +188,115 @@ func _spawn_assassins_for_zone(zone: LevelZone) -> void:
 			continue
 		if rec["level_id"] != zone.level_id:
 			continue
+		_spawn_assassin(rec, zone)
 
-		var npc := NPC_BASE_SCENE.instantiate() as NpcBase
-		npc.level_min_x = zone.min_x + 0.8
-		npc.level_max_x = zone.max_x - 0.8
-		npc.can_flee_left = zone.level_id > 0
-		npc.can_flee_right = zone.level_id < _levels.size() - 1
-		npc.apply_character_data(data)
 
-		var lane_z := _allocate_z_lane()
-		npc.position = _spawn_parent.to_local(Vector3(rec["x_pos"], zone.floor_y, lane_z))
-		_spawn_parent.add_child(npc)
-		npc.died.connect(_on_npc_died)
-		npc.fled_level.connect(_on_assassin_fled)
-		rec["node"] = npc
+func _spawn_assassin(rec: Dictionary, zone: LevelZone) -> void:
+	var npc := NPC_BASE_SCENE.instantiate() as NpcBase
+	npc.level_min_x = zone.min_x + 0.8
+	npc.level_max_x = zone.max_x - 0.8
+	npc.can_flee_left = zone.level_id > 0
+	npc.can_flee_right = zone.level_id < _levels.size() - 1
+	npc.apply_character_data(rec["data"])
+
+	var lane_z := _allocate_z_lane()
+	npc.position = _spawn_parent.to_local(Vector3(rec["x_pos"], zone.floor_y, lane_z))
+	_spawn_parent.add_child(npc)
+	npc.died.connect(_on_npc_died)
+	npc.fled_level.connect(_on_assassin_fled)
+	rec["node"] = npc
 
 
 func _spawn_civilians_for_zone(zone: LevelZone) -> void:
 	for i in range(zone.civilian_count):
-		var civ := NPC_BASE_SCENE.instantiate() as NpcBase
-		civ.is_assassin = false
-		civ.display_name = "Civilista"
-		civ.level_min_x = zone.min_x + 0.8
-		civ.level_max_x = zone.max_x - 0.8
-		civ.appearance = CharacterGenerator.generate_civilian_appearance(_pool, _reserved_signatures)
+		_spawn_civilian(zone, zone.get_random_x())
 
-		var lane_z := _allocate_z_lane()
-		civ.position = _spawn_parent.to_local(Vector3(zone.get_random_x(), zone.floor_y, lane_z))
-		_spawn_parent.add_child(civ)
-		civ.died.connect(_on_npc_died)
-		_active_civilians.append(civ)
+
+func _spawn_civilian(zone: LevelZone, x: float) -> void:
+	var civ := NPC_BASE_SCENE.instantiate() as NpcBase
+	civ.is_assassin = false
+	civ.display_name = "Civilista"
+	civ.level_min_x = zone.min_x + 0.8
+	civ.level_max_x = zone.max_x - 0.8
+	civ.appearance = CharacterGenerator.generate_civilian_appearance(_pool, _reserved_signatures)
+
+	var lane_z := _allocate_z_lane()
+	civ.position = _spawn_parent.to_local(Vector3(x, zone.floor_y, lane_z))
+	_spawn_parent.add_child(civ)
+	civ.died.connect(_on_npc_died)
+	_active_civilians.append(civ)
+
+
+func _on_tram_timer() -> void:
+	trigger_tram()
+	_tram_timer.start(randf_range(tram_interval_range.x, tram_interval_range.y))
+
+
+## Šalina zastaví na okraji čtvrti dál od hráče: pár lidí mimo záběr nastoupí,
+## noví cestující (a možná assassin z jiné čtvrti) vystoupí a hluk chvíli přehluší svědky.
+func trigger_tram() -> void:
+	var zone := _get_zone(active_level_id)
+	if not zone:
+		return
+	var player := get_tree().get_first_node_in_group(&"player") as Node3D
+	var player_x := player.global_position.x if player else zone.min_x
+	var stop_x := zone.min_x + 0.8 if player_x - zone.min_x > zone.max_x - player_x else zone.max_x - 0.8
+
+	var departing: Array[NpcBase] = []
+	for civ in _active_civilians:
+		if departing.size() < tram_passengers_out and _can_board_tram(civ, player_x):
+			departing.append(civ)
+	for civ in departing:
+		_active_civilians.erase(civ)
+		_board_tram(civ)
+
+	var leaving_rec: Dictionary = {}
+	for rec in _assassin_records:
+		if _can_board_tram(rec["node"], player_x):
+			leaving_rec = rec
+			break
+	var arriving_rec: Dictionary = {}
+	var neighbors := [active_level_id - 1, active_level_id + 1]
+	for rec in _assassin_records:
+		if rec["data"].is_alive and rec["node"] == null and rec["level_id"] in neighbors:
+			arriving_rec = rec
+			break
+
+	if not leaving_rec.is_empty():
+		_board_tram(leaving_rec["node"])
+		_move_record_to_neighbor(leaving_rec)
+	if not arriving_rec.is_empty():
+		_assign_record_to_level(arriving_rec, active_level_id)
+		arriving_rec["x_pos"] = stop_x
+		arriving_rec["time_frozen"] = 0.0
+		_spawn_assassin(arriving_rec, zone)
+
+	for i in range(tram_passengers_in):
+		_spawn_civilian(zone, stop_x + randf_range(-0.6, 0.6))
+
+	NpcBase.noise_cover_until_msec = Time.get_ticks_msec() + int(tram_noise_duration * 1000.0)
+	tram_arrived.emit(zone)
+
+
+func _can_board_tram(npc: Variant, player_x: float) -> bool:
+	return (
+		is_instance_valid(npc)
+		and not npc.is_queued_for_deletion()
+		and npc.state in [NpcBase.State.WANDER, NpcBase.State.LEAN]
+		and absf(npc.global_position.x - player_x) > tram_offscreen_distance
+	)
+
+
+func _board_tram(npc: NpcBase) -> void:
+	_available_z_lanes.append(npc.global_position.z)
+	npc.queue_free()
+
+
+func _move_record_to_neighbor(rec: Dictionary) -> void:
+	rec["node"] = null
+	rec["time_frozen"] = 0.0
+	var target_lvl := active_level_id + (1 if active_level_id < _levels.size() - 1 else -1)
+	_assign_record_to_level(rec, target_lvl)
 
 
 func _on_director_tick() -> void:

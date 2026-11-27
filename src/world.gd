@@ -36,6 +36,7 @@ const LATE_PRESSURE_START := 0.6
 @export var sfx_quest_progress: AudioStream
 @export var sfx_list_toggle: AudioStream
 @export var sfx_player_killed: AudioStream
+@export var sfx_tram: AudioStream = preload("res://assets/sfx/freesound_community-street-distant-tram-noise-28842.mp3")
 
 @onready var _player: Player = $Player
 @onready var _player_camera: Camera3D = $Player/Camera3D
@@ -107,6 +108,7 @@ func _ready() -> void:
 	_director.quest_npc_interacted.connect(_on_quest_npc_interacted)
 	_director.level_activated.connect(_on_level_activated)
 	_director.rival_found_battery.connect(_on_rival_found_battery)
+	_director.tram_arrived.connect(_on_tram_arrived)
 	_player.defense_requested.connect(_start_defense)
 	_player.killed_by_assassin.connect(_on_player_killed)
 	_player.assassination_spotted.connect(_break_combo)
@@ -201,6 +203,7 @@ func _input(event: InputEvent) -> void:
 
 func _exit_tree() -> void:
 	NpcBase.late_pressure = 0.0
+	NpcBase.noise_cover_until_msec = 0
 	if _defense_deadline_ms != 0:
 		Engine.time_scale = _normal_time_scale
 
@@ -385,6 +388,13 @@ func _on_level_activated(zone: LevelZone) -> void:
 func _on_rival_found_battery(data: CharacterData, zone: LevelZone) -> void:
 	if not _match_ended and zone:
 		_game_hud.show_rival_battery(data.display_name, zone.level_name)
+
+
+func _on_tram_arrived(_zone: LevelZone) -> void:
+	if _match_ended:
+		return
+	AudioManager.play_sfx(sfx_tram)
+	_game_hud.show_event("Přijela šalina! Na %d s přehluší svědky. Pozor, kdo vystoupil." % roundi(_director.tram_noise_duration))
 
 
 func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:

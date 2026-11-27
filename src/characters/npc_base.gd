@@ -76,6 +76,8 @@ const DEFENSE_STUN_DURATION := 3.0
 
 ## Tlak závěru zápasu 0..1. Nastavuje World podle hodin; sdílí ho všechna NPC.
 static var late_pressure: float = 0.0
+## Do tohoto času (Time.get_ticks_msec) hluk šaliny přehlušuje svědky.
+static var noise_cover_until_msec: int = 0
 
 var state: State = State.WANDER
 var has_balloon: bool = false:
@@ -635,6 +637,8 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 
 
 func _startle_nearby_civilians() -> int:
+	if Time.get_ticks_msec() < noise_cover_until_msec:
+		return 0
 	var witnesses := 0
 	for node in get_tree().get_nodes_in_group(&"npcs"):
 		var witness := node as NpcBase
