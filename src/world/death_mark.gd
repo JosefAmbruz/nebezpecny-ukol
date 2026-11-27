@@ -65,6 +65,6 @@ func _update_label_text() -> void:
 	if not info_label:
 		return
 	if was_assassin:
-		info_label.text = "Zde zemřel:\n%s (Assassin)" % victim_name
+		info_label.text = "Zde zemřel:\n%s" % victim_name
 	else:
 		info_label.text = "Zde zemřel:\nCivilista"
