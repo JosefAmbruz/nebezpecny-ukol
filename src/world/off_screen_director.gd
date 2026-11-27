@@ -298,7 +298,12 @@ func _on_assassin_fled(npc: NpcBase, exit_side: int) -> void:
 			break
 
 
-func spawn_death_mark(world_pos: Vector3, victim_name: String, was_assassin: bool) -> void:
+func spawn_death_mark(
+	world_pos: Vector3,
+	victim_name: String,
+	was_assassin: bool,
+	gender: CharacterAppearance.Gender = CharacterAppearance.Gender.MALE
+) -> void:
 	if not _spawn_parent:
 		return
 	var zone := _get_zone(active_level_id)
@@ -311,6 +316,7 @@ func spawn_death_mark(world_pos: Vector3, victim_name: String, was_assassin: boo
 		"frame": randi_range(0, 5),
 		"victim_name": victim_name,
 		"was_assassin": was_assassin,
+		"gender": gender,
 	}
 	_death_mark_records.append(record)
 	_instantiate_death_mark(record)
@@ -324,7 +330,13 @@ func _spawn_death_marks_for_zone(zone: LevelZone) -> void:
 
 func _instantiate_death_mark(record: Dictionary) -> void:
 	var mark := DEATH_MARK_SCENE.instantiate() as DeathMark
-	mark.setup(record["victim_name"], record["was_assassin"], record["frame"])
+	mark.setup(
+		record["victim_name"],
+		record["was_assassin"],
+		record["frame"],
+		false,
+		record.get("gender", CharacterAppearance.Gender.MALE)
+	)
 	_spawn_parent.add_child(mark)
 	mark.global_position = Vector3(record["x_pos"], record["y_pos"], record["z_pos"])
 	_active_death_marks.append(mark)
@@ -340,7 +352,12 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 				break
 
 	var victim_name := npc.character_data.display_name if npc.character_data else npc.display_name
-	spawn_death_mark(npc.global_position, victim_name, npc.is_assassin)
+	var victim_gender := (
+		npc.appearance.gender
+		if npc.appearance
+		else CharacterAppearance.Gender.MALE
+	)
+	spawn_death_mark(npc.global_position, victim_name, npc.is_assassin, victim_gender)
 	npc_died.emit(npc, killer)
 
 

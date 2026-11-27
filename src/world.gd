@@ -401,15 +401,27 @@ func _on_quest_npc_interacted(_npc: QuestNpc, actor: Node3D, role: QuestNpc.Role
 
 func _on_player_killed(attacker: Node3D, death_animation: Tween) -> void:
 	AudioManager.play_sfx(sfx_player_killed)
-	_director.spawn_death_mark(_player.global_position, "Ty (Hráč)", true)
+	var player_gender := (
+		_player.visuals.appearance.gender
+		if _player and _player.visuals and _player.visuals.appearance
+		else CharacterAppearance.Gender.MALE
+	)
+	_director.spawn_death_mark(_player.global_position, "Ty", true, player_gender)
 
 	var killer_name := "neznámý assassin"
-	if attacker is NpcBase and not attacker.display_name.is_empty():
-		killer_name = attacker.display_name
+	var killer_is_female := false
+	if attacker is NpcBase:
+		if not attacker.display_name.is_empty():
+			killer_name = attacker.display_name
+		if attacker.appearance and attacker.appearance.gender == CharacterAppearance.Gender.FEMALE:
+			killer_is_female = true
 	if attacker is NpcBase and attacker.character_data and attacker.character_data.is_assassin:
 		attacker.character_data.has_killed = true
 		attacker.character_data.kill_score += score_assassin_kill
-	_end_match("Byl jsi zabit", "Dostal tě %s.\nKonečné skóre: %d" % [killer_name, _score], death_animation)
+
+	var end_title := "Byla jsi zabita" if player_gender == CharacterAppearance.Gender.FEMALE else "Byl jsi zabit"
+	var got_you := "Dostala tě" if killer_is_female else "Dostal tě"
+	_end_match(end_title, "%s %s.\nKonečné skóre: %d" % [got_you, killer_name, _score], death_animation)
 
 
 func _format_leaderboard() -> String:
