@@ -58,6 +58,7 @@ var _assassinate_start_cam_pos: Vector3 = Vector3.ZERO
 
 var _elapsed_time: float = 0.0
 var _score: int = 0
+var _assassins_eliminated: int = 0
 var _broken_toothbrushes: int = 0
 var _quest_completed: bool = false
 var _match_ended: bool = false
@@ -365,7 +366,9 @@ func _on_npc_died(npc: NpcBase, killer: Node3D) -> void:
 		_add_score(points)
 		if npc.visuals:
 			npc.visuals.show_score_popup(points)
-		if not npc.is_assassin:
+		if npc.is_assassin:
+			_assassins_eliminated += 1
+		else:
 			_broken_toothbrushes += 1
 			_game_hud.set_toothbrushes(max_toothbrushes, _broken_toothbrushes)
 			if _broken_toothbrushes >= max_toothbrushes:
@@ -452,4 +455,7 @@ func _end_match(title: String, summary: String, death_animation: Tween = null) -
 	if death_animation:
 		await death_animation.finished
 	if _game_hud:
-		_game_hud.show_end_screen(title, summary, _format_leaderboard())
+		var results := "%s\nVyřazení assassini: %d\nZasažení civilisté: %d\nÚkol: %s" % [
+			summary, _assassins_eliminated, _broken_toothbrushes, "splněn" if _quest_completed else "nesplněn"
+		]
+		_game_hud.show_end_screen(title, results, _format_leaderboard())
