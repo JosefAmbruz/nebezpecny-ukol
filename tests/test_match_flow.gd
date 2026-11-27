@@ -51,6 +51,7 @@ func _run_test() -> void:
 	assert(foot.position.y > 0.12)
 	visuals._pose_walk(0.0, 0.0, 1.0)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Náměstí | Jdi doprava")
+	assert(world._game_hud.get_node("%BalloonWarning").visible)
 	world._player.position.x = 0.0
 	await physics_frame
 	await physics_frame
@@ -91,12 +92,14 @@ func _run_test() -> void:
 	world._director.activate_level(1)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Náměstí | Jsi na místě")
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.MADRINA_METTICULOSA)
+	assert("Pozor" in world._game_hud.get_node("%BalloonWarning").text)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Park | Jdi doprava")
 	world._director.activate_level(2)
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.PADRINO_MORETTI)
 	assert(world._game_hud.get_node("%QuestRoute").text == "Start | Jdi doleva")
 	world._director.activate_level(0)
 	world._on_quest_npc_interacted(null, world._player, QuestNpc.Role.PADRINO_PACATO)
+	assert(not world._game_hud.get_node("%BalloonWarning").visible)
 	assert(not world._game_hud.get_node("%QuestRoute").visible)
 	world._assassin_list_ui.toggle_list()
 	killer.position = world._player.position + Vector3(-1.0, 0.0, 0.0)

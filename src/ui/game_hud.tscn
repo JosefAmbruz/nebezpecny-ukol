@@ -103,6 +103,13 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.72, 0.91, 1, 1)
 text = "Náměstí"
 
+[node name="BalloonWarning" type="Label" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.78, 0.54, 1)
+text = "Balónek přitahuje assassiny."
+autowrap_mode = 2
+
 [node name="Restart" type="Button" parent="TopLeftPanel/MarginContainer/VBoxContainer"]
 unique_name_in_owner = true
 layout_mode = 2

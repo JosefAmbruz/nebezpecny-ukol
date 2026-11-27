@@ -323,9 +323,10 @@ func _try_acquire_stalk_target(delta: float) -> void:
 			if target == self or not _is_valid_attack_target(target):
 				continue
 			var distance := absf(target.global_position.x - global_position.x)
-			if distance > detect_range or _target_is_safe(target):
+			var target_range := detect_range * maxf(1.0, balloon_detect_range_multiplier) if target.get(&"has_balloon") == true else detect_range
+			if distance > target_range or _target_is_safe(target):
 				continue
-			var rate := stalk_trigger_chance_per_sec * lerpf(1.0, 0.4, distance / detect_range)
+			var rate := stalk_trigger_chance_per_sec * lerpf(1.0, 0.4, distance / target_range)
 			if target.get(&"has_balloon") == true:
 				rate *= balloon_detect_multiplier
 			if rate > best_rate:
@@ -343,7 +344,8 @@ func _process_stalk(delta: float) -> void:
 	var dist_x := _stalk_target.global_position.x - global_position.x
 	var abs_dist := absf(dist_x)
 	_stalk_time_left -= delta
-	if _stalk_time_left <= 0.0 or abs_dist > detect_range * 1.6 or _target_is_safe(_stalk_target):
+	var target_range := detect_range * maxf(1.0, balloon_detect_range_multiplier) if _stalk_target.get(&"has_balloon") == true else detect_range
+	if _stalk_time_left <= 0.0 or abs_dist > target_range * 1.6 or _target_is_safe(_stalk_target):
 		_abort_attack()
 		return
 

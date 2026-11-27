@@ -97,6 +97,8 @@ func enable_restart() -> void:
 
 
 func set_quest_state(has_balloon: bool, has_battery: bool, completed: bool) -> void:
+	%BalloonWarning.visible = not completed
+	%BalloonWarning.text = "Balónek přitahuje assassiny. Pozor na okolí!" if has_balloon else "Balónek přitahuje assassiny."
 	if completed:
 		_quest_label.text = "Úkol splněn | Bonus připsán"
 		_quest_level_id = -1

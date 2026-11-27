@@ -56,6 +56,22 @@ func _run_test() -> void:
 	assassin._process_stalk(0.1)
 	assert(assassin.state == NpcBase.State.WANDER)
 
+	# A balloon carrier can be detected beyond the normal range and pursued there.
+	distant_assassin.remove_from_group(&"assassins")
+	player.position.x = assassin.position.x + assassin.detect_range * 1.7
+	assassin._attack_cooldown = 0.0
+	assassin._try_acquire_stalk_target(1.0)
+	assert(assassin.state == NpcBase.State.WANDER)
+	player.has_balloon = true
+	assassin._try_acquire_stalk_target(1.0)
+	assert(assassin._stalk_target == player)
+	assassin._process_stalk(0.1)
+	assert(assassin.state == NpcBase.State.STALK)
+	player.has_balloon = false
+	assassin._process_stalk(0.1)
+	assert(assassin.state == NpcBase.State.WANDER)
+	player.position.x = 0.0
+
 	witness.position.x = 2.0
 	seed(12345)
 	for i in 100:
