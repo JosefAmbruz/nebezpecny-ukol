@@ -64,6 +64,7 @@ const DEFENSE_STUN_DURATION := 3.0
 @export var stalk_trigger_chance_per_sec: float = 0.14
 @export var balloon_detect_multiplier: float = 2.5
 @export var balloon_detect_range_multiplier: float = 1.8
+@export var sprint_detect_multiplier: float = 2.5
 @export var post_abort_cooldown: float = 4.0
 
 var state: State = State.WANDER
@@ -339,6 +340,8 @@ func _try_acquire_stalk_target(delta: float) -> void:
 			var rate := stalk_trigger_chance_per_sec * lerpf(1.0, 0.4, distance / target_range)
 			if target.get(&"has_balloon") == true:
 				rate *= balloon_detect_multiplier
+			if target.get(&"is_sprinting") == true:
+				rate *= sprint_detect_multiplier
 			if rate > best_rate:
 				best_target = target
 				best_rate = rate

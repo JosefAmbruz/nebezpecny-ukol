@@ -147,6 +147,7 @@ bbcode_enabled = true
 fit_content = true
 scroll_active = false
 text = "[b]A / D nebo šipky[/b] | Pohyb. Myší se rozhlížej a pohledem odraď útočníka.
+[b]Shift[/b] | Sprint. Rychlejší, ale assassini si tě všimnou mnohem dřív.
 [b]Tab[/b] | Porovnej portréty s tvářemi v davu.
 [b]Drž levé tlačítko[/b] | Zblízka promluvíš nebo zaútočíš. Když se cíl otočí k tobě, pusť tlačítko.
 [b]E u stojanu[/b] | Opři se a na chvíli se chraň před útokem.

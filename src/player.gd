@@ -20,6 +20,8 @@ const BALLOON_SCENE: PackedScene = preload("res://src/characters/balloon_visual.
 
 @export_group("Movement")
 @export var move_speed: float = 4.5
+## Sprint je rychlejší, ale assassini si sprintujícího hráče všimnou dřív.
+@export var sprint_speed: float = 7.0
 @export var gravity: float = 18.0
 
 @export_group("Interaction (Kartáček & Quest)")
@@ -37,6 +39,7 @@ var has_balloon: bool = false:
 		_sync_balloon_visual()
 var has_battery: bool = false
 var is_alive: bool = true
+var is_sprinting: bool = false
 var movement_locked: bool = false
 
 var _balloon_instance: Node3D = null
@@ -114,6 +117,7 @@ func _handle_movement(delta: float) -> void:
 	else:
 		velocity.y = 0.0
 
+	is_sprinting = false
 	if movement_locked:
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -132,7 +136,8 @@ func _handle_movement(delta: float) -> void:
 			move_and_slide()
 			return
 
-	velocity.x = input_x * move_speed
+	is_sprinting = absf(input_x) > 0.1 and Input.is_action_pressed(&"sprint")
+	velocity.x = input_x * (sprint_speed if is_sprinting else move_speed)
 	velocity.z = 0.0
 	move_and_slide()
 
