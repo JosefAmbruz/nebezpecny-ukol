@@ -29,6 +29,13 @@ static func generate_assassins(
 		)
 
 	var clamped_quest_count := mini(quest_count, count)
+	# Povahy se střídají rovnoměrně, aby v každém zápase byly všechny.
+	var personalities := [
+		CharacterData.Personality.AGGRESSIVE,
+		CharacterData.Personality.PATIENT,
+		CharacterData.Personality.SKITTISH,
+	]
+	personalities.shuffle()
 
 	for i in range(count):
 		var data := CharacterData.new()
@@ -42,6 +49,7 @@ static func generate_assassins(
 		data.is_assassin = true
 		data.is_alive = true
 		data.quest_stage = CharacterData.QuestStage.NONE
+		data.personality = personalities[i % personalities.size()]
 
 		if i < clamped_quest_count:
 			data.can_do_quest = true

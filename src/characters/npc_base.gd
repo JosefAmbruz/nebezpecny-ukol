@@ -69,6 +69,8 @@ const DEFENSE_STUN_DURATION := 3.0
 @export var heat_detect_multiplier: float = 3.0
 @export var heat_detect_range_multiplier: float = 1.5
 @export var post_abort_cooldown: float = 4.0
+## Zbabělý assassin uteče s touto šancí za sekundu, když se na něj cíl dívá.
+@export var skittish_flee_chance_per_sec: float = 0.8
 ## Při plném tlaku závěru zápasu se šance začít stopovat násobí touto hodnotou.
 @export var late_stalk_multiplier: float = 2.0
 ## Při plném tlaku se nabíjení útoku zrychlí o tento podíl.
@@ -108,6 +110,8 @@ var _lean_timer: float = 0.0
 var _stalk_target: Node3D = null
 var _stalk_pause_timer: float = 0.0
 var _stalk_time_left: float = 0.0
+var _stalk_time_limit: float = STALK_TIME_LIMIT
+var _stalk_speed_factor: float = 0.95
 var _attack_elapsed: float = 0.0
 var _attack_cooldown: float = 0.0
 var _evade_timer: float = 0.0
@@ -132,6 +136,7 @@ func _ready() -> void:
 		detect_range *= preset["detect_range_mult"]
 		stalk_trigger_chance_per_sec *= preset["stalk_chance_mult"]
 		attack_duration *= preset["attack_duration_mult"]
+		_apply_personality()
 
 	if visuals and appearance:
 		visuals.appearance = appearance
@@ -328,6 +333,25 @@ func _reset_glance_timer() -> void:
 
 #region Assassin AI (Stalk, Attack, Flee)
 
+func _get_personality() -> CharacterData.Personality:
+	return character_data.personality if character_data else CharacterData.Personality.NONE
+
+
+func _apply_personality() -> void:
+	match _get_personality():
+		CharacterData.Personality.AGGRESSIVE:
+			stalk_trigger_chance_per_sec *= 1.8
+			attack_duration *= 0.8
+			post_abort_cooldown *= 0.5
+			_stalk_speed_factor = 1.25
+		CharacterData.Personality.PATIENT:
+			stalk_trigger_chance_per_sec *= 0.7
+			detect_range *= 1.25
+			_stalk_time_limit *= 2.0
+		CharacterData.Personality.SKITTISH:
+			attack_duration *= 1.2
+
+
 func alert_to_stalk(target: Node3D) -> bool:
 	if not is_assassin or state in [State.DEAD, State.FLEE, State.ATTACK, State.STUNNED] or _attack_cooldown > 0.0 or _is_in_passive_immunity_zone():
 		return false
@@ -336,7 +360,7 @@ func alert_to_stalk(target: Node3D) -> bool:
 	_exit_lean()
 	_stalk_target = target
 	_stalk_pause_timer = 0.7
-	_stalk_time_left = STALK_TIME_LIMIT
+	_stalk_time_left = _stalk_time_limit
 	state = State.STALK
 	return true
 
@@ -405,6 +429,9 @@ func _process_stalk(delta: float) -> void:
 		return
 
 	if _target_is_looking_at_me(_stalk_target):
+		if _get_personality() == CharacterData.Personality.SKITTISH and _stalk_target is Player and randf() < 1.0 - exp(-skittish_flee_chance_per_sec * delta):
+			_enter_flee()
+			return
 		velocity.x = 0.0
 		_looking_right = dist_x < 0.0
 		if abs_dist < attack_range * 0.8:
@@ -420,7 +447,7 @@ func _process_stalk(delta: float) -> void:
 
 	# Simuluje nenápadnou chůzi (občas krátce zastaví), ale postupně se přibližuje
 	if abs_dist > attack_range * 0.75:
-		_move_horizontally(signf(dist_x), walk_speed * 0.95)
+		_move_horizontally(signf(dist_x), walk_speed * _stalk_speed_factor)
 		if randf() < 0.25 * delta:
 			_stalk_pause_timer = randf_range(0.4, 1.0)
 	else:
