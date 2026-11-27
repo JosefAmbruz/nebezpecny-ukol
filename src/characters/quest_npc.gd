@@ -56,6 +56,9 @@ func _ready() -> void:
 			visuals.appearance = appearance
 		if (not appearance or not appearance.headwear_scene) and default_hat_scene:
 			visuals.set_headwear(default_hat_scene)
+		if balloon_bunch:
+			balloon_bunch.reparent(visuals.get_balloon_anchor(), false)
+			balloon_bunch.position = Vector3.ZERO
 
 	_configure_by_role()
 	$NameMarker.text = display_name
@@ -89,14 +92,9 @@ func _set_balloon_bunch_visible(show_balloons: bool) -> void:
 		child.queue_free()
 	if not show_balloons:
 		return
-	var offsets := [
-		Vector3(-0.35, 0.1, 0.0),
-		Vector3(0.0, 0.25, -0.05),
-		Vector3(0.35, 0.05, 0.05),
-	]
-	for offset in offsets:
+	for i in 3:
 		var b := BALLOON_SCENE.instantiate() as Node3D
-		b.position = offset
+		b.set("initial_sway", (i - 1) * 0.35)
 		balloon_bunch.add_child(b)
 
 
