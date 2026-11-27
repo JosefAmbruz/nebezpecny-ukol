@@ -54,3 +54,13 @@ shape = SubResource("BoxShape3D_safe")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.35, 0)
 bus = &"Voice"
 max_distance = 18.0
+
+[node name="WitnessReaction" type="Label3D" parent="."]
+visible = false
+position = Vector3(0, 2.25, 0)
+billboard = 1
+no_depth_test = true
+font_size = 42
+outline_size = 10
+pixel_size = 0.009
+text = "Pomoc!"

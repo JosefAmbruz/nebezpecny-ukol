@@ -98,6 +98,7 @@ var _attack_cooldown: float = 0.0
 var _evade_timer: float = 0.0
 var _evade_target_x: float = 0.0
 var _flee_exit_side: int = 1
+var _witness_reaction_tween: Tween
 
 
 func _ready() -> void:
@@ -532,6 +533,11 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 	if kind == InteractableNpc.InteractionKind.ASSASSINATE:
 		if _is_leaning:
 			_exit_lean()
+		if _witness_reaction_tween and _witness_reaction_tween.is_valid():
+			_witness_reaction_tween.kill()
+		var reaction := get_node_or_null("WitnessReaction") as Label3D
+		if reaction:
+			reaction.hide()
 		state = State.DEAD
 		velocity = Vector3.ZERO
 		has_balloon = false
@@ -543,16 +549,33 @@ func on_interaction_completed(actor: Node3D, kind: InteractableNpc.InteractionKi
 		if voice_death:
 			AudioManager.play_sfx(voice_death, 0.0, 0.06)
 		died.emit(self, actor)
-		_startle_nearby_civilians()
-		if not is_assassin and actor and actor.is_in_group(&"player"):
+		var witnesses := _startle_nearby_civilians()
+		if witnesses > 0 and actor is Player:
 			_alert_nearby_assassins(actor)
 
 
-func _startle_nearby_civilians() -> void:
+func _startle_nearby_civilians() -> int:
+	var witnesses := 0
 	for node in get_tree().get_nodes_in_group(&"npcs"):
 		var witness := node as NpcBase
-		if witness and not witness.is_queued_for_deletion() and absf(witness.global_position.x - global_position.x) <= WITNESS_RANGE:
+		if witness and not witness.is_assassin and witness.state != State.DEAD and not witness.is_queued_for_deletion() and absf(witness.global_position.x - global_position.x) <= WITNESS_RANGE:
 			witness._evade_danger(global_position.x)
+			witness._show_witness_reaction()
+			witnesses += 1
+	return witnesses
+
+
+func _show_witness_reaction() -> void:
+	var label := get_node_or_null("WitnessReaction") as Label3D
+	if label:
+		if _witness_reaction_tween and _witness_reaction_tween.is_valid():
+			_witness_reaction_tween.kill()
+		label.show()
+		_witness_reaction_tween = create_tween()
+		_witness_reaction_tween.tween_interval(2.0)
+		_witness_reaction_tween.tween_callback(label.hide)
+	if voice_flee and _voice_player:
+		AudioManager.try_play_crowd_voice_3d(_voice_player, voice_flee, 1.5)
 
 
 func _alert_nearby_assassins(player_node: Node3D) -> void:

@@ -135,6 +135,7 @@ text = "[b]A / D nebo šipky[/b] | Pohyb. Myší se rozhlížej a pohledem odra�
 [b]Drž levé tlačítko[/b] | Zblízka promluvíš nebo zaútočíš. Když se cíl otočí k tobě, pusť tlačítko.
 [b]E u stojanu[/b] | Opři se a na chvíli se chraň před útokem.
 [b]F[/b] | Odraz útok, když se čas zpomalí a objeví se výzva.
+[b]Svědci[/b] | Blízcí civilisté po útoku utečou a mohou upozornit assassiny.
 [b]Skóre[/b] | Assassin body přidá, civilista je ubere. Úkol je za bonus."
 
 [connection signal="pressed" from="Center/Content/Start" to="." method="_on_start_pressed"]
