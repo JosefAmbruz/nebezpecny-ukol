@@ -22,6 +22,12 @@ func _ready() -> void:
 	assert(balloon.global_position.x > initial_x + 0.05)
 	assert(balloon.global_position.distance_to(anchor.global_position) < BalloonVisual.STRING_LENGTH + 0.1)
 	assert(balloon.global_position.y > anchor.global_position.y)
+	balloon.global_position = anchor.global_position + Vector3(2.3, 0.2, 0.0)
+	balloon.linear_velocity = Vector3(5.0, -5.0, 0.0)
+	for i in 5:
+		await get_tree().physics_frame
+	assert(balloon.global_position.y >= anchor.global_position.y + BalloonVisual.MIN_HEIGHT - 0.05)
+	assert(balloon.global_position.distance_to(anchor.global_position) < BalloonVisual.STRING_LENGTH + 0.1)
 	await get_tree().process_frame
 	var string := balloon.get_node("String") as MeshInstance3D
 	var string_start := string.to_global(Vector3(0.0, -0.5, 0.0))

@@ -2,6 +2,7 @@ class_name BalloonVisual
 extends RigidBody3D
 
 const STRING_LENGTH := 2.5
+const MIN_HEIGHT := 2.0
 const BALLOON_RADIUS := 0.31
 const LIFT := 5.0
 const DRAG := 1.8
@@ -43,6 +44,19 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var outward_speed := (state.linear_velocity - anchor_velocity).dot(direction)
 		if outward_speed > 0.0:
 			state.linear_velocity -= direction * outward_speed
+	if state.transform.origin.y < anchor_position.y + MIN_HEIGHT:
+		var transform := state.transform
+		var horizontal := Vector2(transform.origin.x - anchor_position.x, transform.origin.z - anchor_position.z)
+		var max_horizontal := sqrt(STRING_LENGTH * STRING_LENGTH - MIN_HEIGHT * MIN_HEIGHT)
+		if horizontal.length() > max_horizontal:
+			horizontal = horizontal.normalized() * max_horizontal
+			var outward := Vector3(horizontal.x, 0.0, horizontal.y).normalized()
+			var outward_speed := (state.linear_velocity - anchor_velocity).dot(outward)
+			if outward_speed > 0.0:
+				state.linear_velocity -= outward * outward_speed
+		transform.origin = anchor_position + Vector3(horizontal.x, MIN_HEIGHT, horizontal.y)
+		state.transform = transform
+		state.linear_velocity.y = maxf(state.linear_velocity.y, anchor_velocity.y)
 
 
 func _process(_delta: float) -> void:
