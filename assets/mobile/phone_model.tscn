@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://assets/mobile/scene.gltf" id="1_phone"]
+
+[node name="PhoneModel" type="Node3D"]
+
+[node name="Mesh" parent="." instance=ExtResource("1_phone")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8.707, -1.353, -0.279)
