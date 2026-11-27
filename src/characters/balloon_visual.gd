@@ -1,7 +1,7 @@
 class_name BalloonVisual
 extends RigidBody3D
 
-const STRING_LENGTH := 1.6
+const STRING_LENGTH := 2.5
 const BALLOON_RADIUS := 0.31
 const LIFT := 5.0
 const DRAG := 1.8
