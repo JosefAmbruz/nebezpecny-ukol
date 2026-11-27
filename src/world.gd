@@ -20,7 +20,7 @@ const DEFENSE_TIME_SCALE := 0.18
 @export var list_zoom_factor: float = 0.65
 @export var list_zoom_duration: float = 0.35
 @export var list_zoom_x_offset: float = 0.9
-@export var assassinate_zoom_factor: float = 0.65
+@export var assassinate_zoom_factor: float = 0.82
 @export var assassinate_focus_y_offset: float = 1.2
 @export var assassinate_zoom_return_duration: float = 0.32
 
@@ -291,6 +291,7 @@ func _update_camera_clamp(delta: float) -> void:
 		return
 
 	if _is_assassinating and not _is_list_open:
+		var cursor_point := _player.get_cursor_world_point()
 		# Kubická ease-out křivka: rychlý dramatický nástup na oběť, ke konci zpomaluje
 		var eased := 1.0 - pow(1.0 - _assassinate_progress, 3.0)
 		_player_camera.size = lerpf(_camera_base_size, _camera_base_size * assassinate_zoom_factor, eased)
@@ -301,6 +302,7 @@ func _update_camera_clamp(delta: float) -> void:
 			cam_pos.x = lerpf(_assassinate_start_cam_pos.x, victim_pos.x, eased)
 			cam_pos.y = lerpf(_assassinate_start_cam_pos.y, victim_pos.y + assassinate_focus_y_offset, eased)
 			_player_camera.global_position = cam_pos
+		_player_camera.global_position += cursor_point - _player.get_cursor_world_point()
 		return
 
 	var target_world_x: float
