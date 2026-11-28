@@ -1,6 +1,6 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://cab0yvcvthnhc"]
 
-[ext_resource type="Script" path="res://src/ui/assassin_list_ui.gd" id="1_listui"]
+[ext_resource type="Script" uid="uid://cdfeak11di3r6" path="res://src/ui/assassin_list_ui.gd" id="1_listui"]
 [ext_resource type="PackedScene" path="res://assets/mobile/phone_model.tscn" id="2_phone"]
 
 [sub_resource type="Environment" id="Environment_phone"]
@@ -17,11 +17,11 @@ corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
 
-[node name="AssassinListUI" type="CanvasLayer"]
+[node name="AssassinListUI" type="CanvasLayer" unique_id=2057363379]
 layer = 5
 script = ExtResource("1_listui")
 
-[node name="HintLabel" type="Label" parent="."]
+[node name="HintLabel" type="Label" parent="." unique_id=837152321]
 unique_name_in_owner = true
 anchors_preset = 1
 anchor_left = 1.0
@@ -37,8 +37,9 @@ theme_override_font_sizes/font_size = 24
 text = "[Tab] Portréty assassinů"
 horizontal_alignment = 2
 
-[node name="PhoneRoot" type="Control" parent="."]
+[node name="PhoneRoot" type="Control" parent="." unique_id=1477151647]
 unique_name_in_owner = true
+layout_mode = 3
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -51,7 +52,7 @@ offset_bottom = -16.0
 grow_horizontal = 0
 grow_vertical = 0
 
-[node name="PhoneViewportContainer" type="SubViewportContainer" parent="PhoneRoot"]
+[node name="PhoneViewportContainer" type="SubViewportContainer" parent="PhoneRoot" unique_id=667689297]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -61,7 +62,7 @@ grow_vertical = 2
 mouse_filter = 2
 stretch = true
 
-[node name="PhoneViewport" type="SubViewport" parent="PhoneRoot/PhoneViewportContainer"]
+[node name="PhoneViewport" type="SubViewport" parent="PhoneRoot/PhoneViewportContainer" unique_id=1970668789]
 own_world_3d = true
 transparent_bg = true
 handle_input_locally = false
@@ -69,50 +70,58 @@ msaa_3d = 2
 size = Vector2i(560, 900)
 render_target_update_mode = 4
 
-[node name="WorldEnvironment" type="WorldEnvironment" parent="PhoneRoot/PhoneViewportContainer/PhoneViewport"]
+[node name="WorldEnvironment" type="WorldEnvironment" parent="PhoneRoot/PhoneViewportContainer/PhoneViewport" unique_id=2029634746]
 environment = SubResource("Environment_phone")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="PhoneRoot/PhoneViewportContainer/PhoneViewport"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="PhoneRoot/PhoneViewportContainer/PhoneViewport" unique_id=1894884079]
 transform = Transform3D(0.92, -0.15, 0.36, 0, 0.92, 0.39, -0.39, -0.36, 0.85, 0, 0, 2)
 light_energy = 0.8
 
-[node name="Camera3D" type="Camera3D" parent="PhoneRoot/PhoneViewportContainer/PhoneViewport"]
+[node name="Camera3D" type="Camera3D" parent="PhoneRoot/PhoneViewportContainer/PhoneViewport" unique_id=1877096495]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
 projection = 1
 current = true
 size = 1.24
 
-[node name="PhoneModel" parent="PhoneRoot/PhoneViewportContainer/PhoneViewport" instance=ExtResource("2_phone")]
+[node name="PhoneModel" parent="PhoneRoot/PhoneViewportContainer/PhoneViewport" unique_id=1010841641 instance=ExtResource("2_phone")]
 
-[node name="ListPanel" type="PanelContainer" parent="PhoneRoot"]
+[node name="ListPanel" type="PanelContainer" parent="PhoneRoot" unique_id=1325505103]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 44.0
-offset_top = 74.0
+offset_top = 81.0
 offset_right = -44.0
-offset_bottom = -96.0
+offset_bottom = -56.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_screen")
 
-[node name="MarginContainer" type="MarginContainer" parent="PhoneRoot/ListPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="PhoneRoot/ListPanel" unique_id=1351643743]
 layout_mode = 2
 theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 14
+theme_override_constants/margin_top = 22
 theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 14
+theme_override_constants/margin_bottom = 22
 
-[node name="VBoxContainer" type="VBoxContainer" parent="PhoneRoot/ListPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="PhoneRoot/ListPanel/MarginContainer" unique_id=1196440714]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="HeaderRow" type="HBoxContainer" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer"]
+[node name="Time" type="HBoxContainer" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer" unique_id=587248818]
 layout_mode = 2
 
-[node name="TitleLabel" type="Label" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer/HeaderRow"]
+[node name="Label" type="Label" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer/Time" unique_id=576012933]
+layout_mode = 2
+size_flags_horizontal = 10
+text = "19:00"
+
+[node name="HeaderRow" type="HBoxContainer" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer" unique_id=549570432]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer/HeaderRow" unique_id=1900784399]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -120,24 +129,24 @@ theme_override_font_sizes/font_size = 22
 text = "Seznam zaměstnanců společnosti"
 autowrap_mode = 2
 
-[node name="CountLabel" type="Label" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer/HeaderRow"]
+[node name="CountLabel" type="Label" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer/HeaderRow" unique_id=257331371]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "0 naživu"
 
-[node name="CompareHint" type="Label" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer"]
+[node name="CompareHint" type="Label" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer" unique_id=306717614]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.79, 0.85, 0.85, 1)
 theme_override_font_sizes/font_size = 19
 text = "Najdi stejné tváře v davu."
 
-[node name="ScrollContainer" type="ScrollContainer" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer" unique_id=1296478453]
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="EntriesContainer" type="GridContainer" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer/ScrollContainer"]
+[node name="EntriesContainer" type="GridContainer" parent="PhoneRoot/ListPanel/MarginContainer/VBoxContainer/ScrollContainer" unique_id=1903993060]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3

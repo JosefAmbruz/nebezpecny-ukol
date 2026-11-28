@@ -1,8 +1,8 @@
 [gd_scene format=3 uid="uid://cn13ckef7qu5i"]
 
 [ext_resource type="PackedScene" uid="uid://cslhaif871y5v" path="res://src/player.tscn" id="1_tp5op"]
-[ext_resource type="AudioStream" uid="uid://cpf50ou2mqw3p" path="res://assets/music/theme.mp3" id="2_5xesp"]
 [ext_resource type="PackedScene" uid="uid://dujxkg6q8c5eu" path="res://src/ui/interaction_indicator.tscn" id="2_uiind"]
+[ext_resource type="AudioStream" uid="uid://bipmiq4rdnp8n" path="res://assets/music/main_theme.ogg" id="2_yyjdi"]
 [ext_resource type="Texture2D" uid="uid://bnt152wwk6mrb" path="res://assets/faces/face4.png" id="3_tnjnu"]
 [ext_resource type="PackedScene" uid="uid://ctuvvi1xre6er" path="res://src/world/safe_object.tscn" id="4_safe"]
 [ext_resource type="Script" uid="uid://bmonou5unw40" path="res://src/characters/character_appearance.gd" id="5_app"]
@@ -16,17 +16,10 @@
 [ext_resource type="PackedScene" path="res://src/ui/game_hud.tscn" id="10_hud"]
 [ext_resource type="Script" uid="uid://cc1emyuveghto" path="res://src/world/level_zone.gd" id="11_zone"]
 [ext_resource type="Script" uid="uid://bvrl8vu1qkm70" path="res://src/world/off_screen_director.gd" id="12_dir"]
-[ext_resource type="Texture2D" uid="uid://b0paxksym3mlp" path="res://assets/environment/skybox/industrial_sunset_puresky.png" id="13_sky"]
 
-[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_vmuob"]
-panorama = ExtResource("13_sky")
-
-[sub_resource type="Sky" id="Sky_yyjdi"]
-sky_material = SubResource("PanoramaSkyMaterial_vmuob")
-
-[sub_resource type="Environment" id="Environment_8kjpi"]
-background_mode = 2
-sky = SubResource("Sky_yyjdi")
+[sub_resource type="Environment" id="Environment_yyjdi"]
+background_mode = 1
+background_color = Color(0.29167297, 0.3917655, 0.5279723, 1)
 
 [sub_resource type="BoxMesh" id="BoxMesh_ground"]
 size = Vector3(96, 2, 57.13867)
@@ -60,7 +53,7 @@ metadata/_custom_type_script = "uid://bmonou5unw40"
 script = ExtResource("8_world")
 total_assassins = 16
 quest_assassins = 3
-background_music = ExtResource("2_5xesp")
+background_music = ExtResource("2_yyjdi")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=540334264]
 transform = Transform3D(-0.8660254, -0.43301278, 0.25, 0, 0.49999997, 0.86602545, -0.50000006, 0.75, -0.43301266, 0, 0, 0)
@@ -71,7 +64,7 @@ shadow_opacity = 0.55
 shadow_blur = 2.0
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2107170856]
-environment = SubResource("Environment_8kjpi")
+environment = SubResource("Environment_yyjdi")
 
 [node name="Ground" type="StaticBody3D" parent="." unique_id=1281902058]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, -0.5, 0)
@@ -106,20 +99,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.6, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.074249, 0.6, 0)
 
 [node name="SafeObjectL1" parent="Levels/Level1" unique_id=1366988348 instance=ExtResource("4_safe")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.5, -6.8918943)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 0.5, -7.390152)
 
 [node name="Environment" type="Node3D" parent="Levels/Level1" unique_id=904546934]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -40.209045)
 
-[node name="Sprite3D" type="Sprite3D" parent="Levels/Level1/Environment" unique_id=119467974]
-transform = Transform3D(0.3812463, 0, 0, 0, 0.43402457, 0, 0, 0, 1, -10.624596, 4.10371, -8.6779175)
+[node name="PalacJalta" type="Sprite3D" parent="Levels/Level1/Environment" unique_id=665004512]
+transform = Transform3D(0.3812463, 0, 0, 0, 0.43402457, 0, 0, 0, 1, -0.94035393, 4.10371, -8.6779175)
 texture = ExtResource("8_8kjpi")
 
-[node name="Sprite3D2" type="Sprite3D" parent="Levels/Level1/Environment" unique_id=665004512]
-transform = Transform3D(0.3812463, 0, 0, 0, 0.43402457, 0, 0, 0, 1, -2.7229462, 4.10371, -8.6779175)
-texture = ExtResource("8_8kjpi")
-
-[node name="Sprite3D3" type="Sprite3D" parent="Levels/Level1/Environment" unique_id=434522233]
-transform = Transform3D(0.3812463, 0, 0, 0, 0.43402457, 0, 0, 0, 1, 5.7299805, 4.10371, -8.6779175)
+[node name="Sprite3D3" type="Sprite3D" parent="Levels/Level1/Environment" unique_id=120008947]
+transform = Transform3D(0.3812463, 0, 0, 0, 0.43402457, 0, 0, 0, 1, 5.659398, 4.10371, -8.6779175)
+modulate = Color(0.59129417, 0.6901881, 0.4837423, 1)
 texture = ExtResource("8_8kjpi")
 
 [node name="Level2" type="Node3D" parent="Levels" unique_id=714084602 node_paths=PackedStringArray("left_bound", "right_bound", "quest_npc_spawn")]
@@ -146,7 +137,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0.6, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0.6, 0)
 
 [node name="SafeObjectL2" parent="Levels/Level2" unique_id=977882420 instance=ExtResource("4_safe")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.5, -7.4840117)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 0.5, -7.9822693)
 
 [node name="BoundaryL1L2" type="MeshInstance3D" parent="Levels/Level2" unique_id=1362403151]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 2.3, -5.8)
@@ -175,7 +166,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0.6, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0.6, 0)
 
 [node name="SafeObjectL3" parent="Levels/Level3" unique_id=1385146574 instance=ExtResource("4_safe")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58, 0.5, -6.400897)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58, 0.5, -6.8991547)
 
 [node name="BoundaryL2L3" type="MeshInstance3D" parent="Levels/Level3" unique_id=1392605300]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 2.3, -5.8)
